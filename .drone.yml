@@ -15,5 +15,5 @@ steps:
         from_secret: registry_token
     commands:
       - img login -u registry -p $TOKEN registry.v0l.io
-      - img build -t registry.v0l.io/zap-live-api:latest -f NostrStreamer/Dockerfile .
-      - img push registry.v0l.io/zap-live-api:latest
+      - img build -t registry.v0l.io/zap-stream-api:latest -f NostrStreamer/Dockerfile .
+      - img push registry.v0l.io/zap-stream-api:latest
