@@ -1,0 +1,120 @@
+using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using NostrStreamer.Database;
+
+namespace NostrStreamer.Controllers;
+
+[Route("/api/playlist")]
+public class PlaylistController : Controller
+{
+    private readonly ILogger<PlaylistController> _logger;
+    private readonly IMemoryCache _cache;
+    private readonly Config _config;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly HttpClient _client;
+
+    public PlaylistController(Config config, IMemoryCache cache, ILogger<PlaylistController> logger, IServiceScopeFactory scopeFactory,
+        HttpClient client)
+    {
+        _config = config;
+        _cache = cache;
+        _logger = logger;
+        _scopeFactory = scopeFactory;
+        _client = client;
+    }
+
+    [HttpGet("{pubkey}.m3u8")]
+    public async Task RewritePlaylist([FromRoute] string pubkey)
+    {
+        var key = await GetStreamKey(pubkey);
+        if (string.IsNullOrEmpty(key))
+        {
+            Response.StatusCode = 404;
+            return;
+        }
+
+        var path = $"/{_config.App}/{key}.m3u8";
+        var ub = new UriBuilder(_config.SrsHttpHost)
+        {
+            Path = path,
+            Query = string.Join("&", Request.Query.Select(a => $"{a.Key}={a.Value}"))
+        };
+
+        Response.ContentType = "application/x-mpegurl";
+        await using var sw = new StreamWriter(Response.Body);
+
+        using var rsp = await _client.GetAsync(ub.Uri);
+        if (!rsp.IsSuccessStatusCode)
+        {
+            Response.StatusCode = (int)rsp.StatusCode;
+            return;
+        }
+
+        await Response.StartAsync();
+        using var sr = new StreamReader(await rsp.Content.ReadAsStreamAsync());
+        while (await sr.ReadLineAsync() is { } line)
+        {
+            if (line.StartsWith("#EXTINF"))
+            {
+                await sw.WriteLineAsync(line);
+                var trackPath = await sr.ReadLineAsync();
+                var seg = Regex.Match(trackPath!, @"-(\d+)\.ts$");
+                await sw.WriteLineAsync($"{pubkey}/{seg.Groups[1].Value}.ts");
+            }
+            else if (line.StartsWith("#EXT-X-STREAM-INF"))
+            {
+                await sw.WriteLineAsync(line);
+                var trackPath = await sr.ReadLineAsync();
+                var trackUri = new Uri(_config.SrsHttpHost, trackPath!);
+                await sw.WriteLineAsync($"{pubkey}.m3u8{trackUri.Query}");
+            }
+            else
+            {
+                await sw.WriteLineAsync(line);
+            }
+        }
+
+        Response.Body.Close();
+    }
+
+    [HttpGet("{pubkey}/{segment}")]
+    public async Task GetSegment([FromRoute] string pubkey, [FromRoute] string segment)
+    {
+        var key = await GetStreamKey(pubkey);
+        if (string.IsNullOrEmpty(key))
+        {
+            Response.StatusCode = 404;
+            return;
+        }
+
+        var path = $"/{_config.App}/{key}-{segment}";
+        await ProxyRequest(path);
+    }
+
+    private async Task ProxyRequest(string path)
+    {
+        using var rsp = await _client.GetAsync(new Uri(_config.SrsHttpHost, path));
+        Response.Headers.ContentType = rsp.Content.Headers.ContentType?.ToString();
+
+        await rsp.Content.CopyToAsync(Response.Body);
+    }
+
+    private async Task<string?> GetStreamKey(string pubkey)
+    {
+        var cacheKey = $"stream-key:{pubkey}";
+        var cached = _cache.Get<string>(cacheKey);
+        if (cached != default)
+        {
+            return cached;
+        }
+
+        using var scope = _scopeFactory.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<StreamerContext>();
+        var user = await db.Users.SingleOrDefaultAsync(a => a.PubKey == pubkey);
+
+        _cache.Set(cacheKey, user?.StreamKey);
+        return user?.StreamKey;
+    }
+}

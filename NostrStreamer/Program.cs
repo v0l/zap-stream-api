@@ -15,6 +15,9 @@ internal static class Program
         var config = builder.Configuration.GetSection("Config").Get<Config>();
         
         ConfigureDb(services, builder.Configuration);
+        services.AddCors();
+        services.AddMemoryCache();
+        services.AddHttpClient();
         services.AddControllers();
         services.AddSingleton(config);
         
@@ -34,7 +37,8 @@ internal static class Program
             var db = scope.ServiceProvider.GetRequiredService<StreamerContext>();
             await db.Database.MigrateAsync();
         }
-        
+
+        app.UseCors(o => o.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
         app.MapControllers();
 
         await app.RunAsync();

@@ -8,19 +8,19 @@ using NostrStreamer.Database;
 namespace NostrStreamer.Controllers;
 
 [Authorize]
-[Route("/api/account")]
-public class AccountController : Controller
+[Route("/api/nostr")]
+public class NostrController : Controller
 {
     private readonly StreamerContext _db;
     private readonly Config _config;
 
-    public AccountController(StreamerContext db, Config config)
+    public NostrController(StreamerContext db, Config config)
     {
         _db = db;
         _config = config;
     }
 
-    [HttpGet]
+    [HttpGet("account")]
     public async Task<ActionResult> GetAccount()
     {
         var user = await GetUser();
@@ -41,7 +41,7 @@ public class AccountController : Controller
 
         return Json(new Account
         {
-            Url = $"rtmp://{_config.SrsPublicHost.Host}/${_config.App}",
+            Url = new Uri(_config.RtmpHost, _config.App).ToString(),
             Key = user.StreamKey
         });
     }

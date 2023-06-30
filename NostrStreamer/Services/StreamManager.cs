@@ -97,12 +97,8 @@ public class StreamManager
 
     private string GetStreamUrl(User u)
     {
-        var ub = new UriBuilder(_config.SrsPublicHost)
-        {
-            Path = $"/{_config.App}/${u.StreamKey}.m3u8"
-        };
-
-        return ub.Uri.ToString();
+        var ub = new Uri(_config.DataHost, $"{u.PubKey}.m3u8");
+        return ub.ToString();
     }
     
     private async Task<User?> GetUserFromStreamKey(string streamKey)
