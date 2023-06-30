@@ -15,5 +15,5 @@ steps:
         from_secret: registry_token
     commands:
       - img login -u registry -p $TOKEN registry.v0l.io
-      - cd NostrStreamer && img build -t registry.v0l.io/nostr-streamer:latest .
+      - img build -t registry.v0l.io/nostr-streamer:latest -f NostrStreamer/Dockerfile .
       - img push registry.v0l.io/nostr-streamer:latest
