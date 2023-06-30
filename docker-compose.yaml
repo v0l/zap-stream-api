@@ -1,0 +1,19 @@
+services:
+  srs:
+    image: ossrs/srs
+    volumes:
+      - "./docker/srs.conf:/usr/local/srs/conf/docker.conf"
+    ports:
+      - "1935:1935"
+      - "1985:1985"
+      - "8080:8080"
+  nostr:
+    image: scsibug/nostr-rs-relay
+    ports:
+      - "8081:8080"
+  postgres:
+    image: postgres:15
+    environment:
+      - "POSTGRES_HOST_AUTH_METHOD=trust"
+    ports:
+      - "5431:5432"
