@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Nostr.Client.Json;
 using Nostr.Client.Messages;
+using Nostr.Client.Utils;
 using NostrStreamer.ApiModel;
 using NostrStreamer.Database;
 using NostrStreamer.Services;
@@ -18,12 +19,14 @@ public class NostrController : Controller
     private readonly StreamerContext _db;
     private readonly Config _config;
     private readonly StreamManager _streamManager;
+    private readonly LndNode _lnd;
 
-    public NostrController(StreamerContext db, Config config, StreamManager streamManager)
+    public NostrController(StreamerContext db, Config config, StreamManager streamManager, LndNode lnd)
     {
         _db = db;
         _config = config;
         _streamManager = streamManager;
+        _lnd = lnd;
     }
 
     [HttpGet("account")]
@@ -63,7 +66,7 @@ public class NostrController : Controller
     }
 
     [HttpPatch("event")]
-    public async Task<IActionResult> UpdateStreamInfo([FromBody]PatchEvent req)
+    public async Task<IActionResult> UpdateStreamInfo([FromBody] PatchEvent req)
     {
         var pubkey = GetPubKey();
         if (string.IsNullOrEmpty(pubkey)) return Unauthorized();
@@ -71,7 +74,30 @@ public class NostrController : Controller
         await _streamManager.PatchEvent(pubkey, req.Title, req.Summary, req.Image);
         return Accepted();
     }
-    
+
+    [HttpGet("topup")]
+    public async Task<IActionResult> TopUp([FromQuery] ulong amount)
+    {
+        var pubkey = GetPubKey();
+        if (string.IsNullOrEmpty(pubkey)) return Unauthorized();
+
+        var invoice = await _lnd.AddInvoice(amount * 1000, TimeSpan.FromMinutes(10), $"Top up for {pubkey}");
+        _db.Payments.Add(new()
+        {
+            PubKey = pubkey,
+            Amount = amount,
+            Invoice = invoice.PaymentRequest,
+            PaymentHash = invoice.RHash.ToByteArray().ToHex()
+        });
+
+        await _db.SaveChangesAsync();
+
+        return Json(new
+        {
+            pr = invoice.PaymentRequest
+        });
+    }
+
     private async Task<User?> GetUser()
     {
         var pk = GetPubKey();

@@ -49,6 +49,10 @@ internal static class Program
         // streaming services
         services.AddTransient<StreamManager>();
         
+        // lnd services
+        services.AddSingleton<LndNode>();
+        services.AddHostedService<LndInvoicesStream>();
+        
         var app = builder.Build();
 
         using (var scope = app.Services.CreateScope())

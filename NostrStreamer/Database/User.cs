@@ -38,4 +38,11 @@ public class User
     /// Comma seperated tags
     /// </summary>
     public string? Tags { get; set; }
+
+    /// <summary>
+    /// Concurrency token
+    /// </summary>
+    public uint Version { get; set; }
+    
+    public List<Payment> Payments { get; init; } = new();
 }
