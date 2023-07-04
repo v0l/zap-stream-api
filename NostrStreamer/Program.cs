@@ -1,3 +1,6 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Nostr.Client.Client;
 using NostrStreamer.Database;
@@ -21,6 +24,22 @@ internal static class Program
         services.AddControllers();
         services.AddSingleton(config);
         
+        // nostr auth
+        services.AddTransient<NostrAuthHandler>();
+        services.AddAuthentication(o =>
+        {
+            o.DefaultChallengeScheme = NostrAuth.Scheme;
+            o.AddScheme<NostrAuthHandler>(NostrAuth.Scheme, "Nostr");
+        });
+
+        services.AddAuthorization(o =>
+        {
+            o.DefaultPolicy = new AuthorizationPolicy(new[]
+            {
+                new ClaimsAuthorizationRequirement(ClaimTypes.Name, null)
+            }, new[] {NostrAuth.Scheme});
+        });
+        
         // nostr services
         services.AddSingleton<NostrMultiWebsocketClient>();
         services.AddSingleton<INostrClient>(s => s.GetRequiredService<NostrMultiWebsocketClient>());
@@ -39,6 +58,7 @@ internal static class Program
         }
 
         app.UseCors(o => o.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
+        app.UseAuthorization();
         app.MapControllers();
 
         await app.RunAsync();

@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using Nostr.Client.Client;
+using Nostr.Client.Json;
 using Nostr.Client.Keys;
 using Nostr.Client.Messages;
 using Nostr.Client.Requests;
@@ -33,8 +35,9 @@ public class StreamManager
         {
             throw new Exception("User balance empty");
         }
+
         var ev = CreateStreamEvent(user, "live");
-        _nostr.Send(new NostrEventRequest(ev));
+        await PublishEvent(user, ev);
     }
 
     public async Task StreamStopped(string streamKey)
@@ -45,7 +48,7 @@ public class StreamManager
         _logger.LogInformation("Stream stopped for: {pubkey}", user.PubKey);
 
         var ev = CreateStreamEvent(user, "ended");
-        _nostr.Send(new NostrEventRequest(ev));
+        await PublishEvent(user, ev);
     }
 
     public async Task ConsumeQuota(string streamKey, double duration)
@@ -64,6 +67,33 @@ public class StreamManager
         {
             throw new Exception("User balance empty");
         }
+    }
+
+    public async Task PatchEvent(string pubkey, string? title, string? summary, string? image)
+    {
+        var user = await _db.Users.SingleOrDefaultAsync(a => a.PubKey == pubkey);
+        if (user == default) throw new Exception("User not found");
+
+        user.Title = title;
+        user.Summary = summary;
+        user.Image = image;
+
+        var existingEvent = user.Event != default ? JsonConvert.DeserializeObject<NostrEvent>(user.Event, NostrSerializer.Settings) : null;
+        var ev = CreateStreamEvent(user, existingEvent?.Tags?.FindFirstTagValue("status") ?? "planned");
+        user.Event = JsonConvert.SerializeObject(ev, NostrSerializer.Settings);
+
+        await _db.SaveChangesAsync();
+
+        _nostr.Send(new NostrEventRequest(ev));
+    }
+
+    private async Task PublishEvent(User user, NostrEvent ev)
+    {
+        await _db.Users
+            .Where(a => a.PubKey == user.PubKey)
+            .ExecuteUpdateAsync(o => o.SetProperty(v => v.Event, JsonConvert.SerializeObject(ev, NostrSerializer.Settings)));
+
+        _nostr.Send(new NostrEventRequest(ev));
     }
 
     private NostrEvent CreateStreamEvent(User user, string state)
@@ -100,7 +130,7 @@ public class StreamManager
         var ub = new Uri(_config.DataHost, $"{u.PubKey}.m3u8");
         return ub.ToString();
     }
-    
+
     private async Task<User?> GetUserFromStreamKey(string streamKey)
     {
         return await _db.Users.SingleOrDefaultAsync(a => a.StreamKey == streamKey);

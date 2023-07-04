@@ -2,8 +2,12 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
+using Nostr.Client.Json;
+using Nostr.Client.Messages;
 using NostrStreamer.ApiModel;
 using NostrStreamer.Database;
+using NostrStreamer.Services;
 
 namespace NostrStreamer.Controllers;
 
@@ -13,11 +17,13 @@ public class NostrController : Controller
 {
     private readonly StreamerContext _db;
     private readonly Config _config;
+    private readonly StreamManager _streamManager;
 
-    public NostrController(StreamerContext db, Config config)
+    public NostrController(StreamerContext db, Config config, StreamManager streamManager)
     {
         _db = db;
         _config = config;
+        _streamManager = streamManager;
     }
 
     [HttpGet("account")]
@@ -39,13 +45,33 @@ public class NostrController : Controller
             await _db.SaveChangesAsync();
         }
 
-        return Json(new Account
+        var account = new Account
         {
             Url = new Uri(_config.RtmpHost, _config.App).ToString(),
-            Key = user.StreamKey
-        });
+            Key = user.StreamKey,
+            Event = !string.IsNullOrEmpty(user.Event) ? JsonConvert.DeserializeObject<NostrEvent>(user.Event, NostrSerializer.Settings) :
+                null,
+            Quota = new()
+            {
+                Unit = "min",
+                Rate = 21,
+                Remaining = user.Balance
+            }
+        };
+
+        return Content(JsonConvert.SerializeObject(account, NostrSerializer.Settings), "application/json");
     }
 
+    [HttpPatch("event")]
+    public async Task<IActionResult> UpdateStreamInfo([FromBody]PatchEvent req)
+    {
+        var pubkey = GetPubKey();
+        if (string.IsNullOrEmpty(pubkey)) return Unauthorized();
+
+        await _streamManager.PatchEvent(pubkey, req.Title, req.Summary, req.Image);
+        return Accepted();
+    }
+    
     private async Task<User?> GetUser()
     {
         var pk = GetPubKey();

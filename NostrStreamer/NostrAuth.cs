@@ -4,6 +4,7 @@ using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Nostr.Client.Json;
 using Nostr.Client.Messages;
 
 namespace NostrStreamer;
@@ -44,7 +45,7 @@ public class NostrAuthHandler : AuthenticationHandler<NostrAuthOptions>
             return AuthenticateResult.Fail("Invalid token");
         }
 
-        var ev = JsonConvert.DeserializeObject<NostrEvent>(Encoding.UTF8.GetString(bToken));
+        var ev = JsonConvert.DeserializeObject<NostrEvent>(Encoding.UTF8.GetString(bToken), NostrSerializer.Settings);
         if (ev == default)
         {
             return AuthenticateResult.Fail("Invalid nostr event");
@@ -66,7 +67,7 @@ public class NostrAuthHandler : AuthenticationHandler<NostrAuthOptions>
             return AuthenticateResult.Fail("Invalid nostr event, timestamp out of range");
         }
 
-        var urlTag = ev.Tags!.FirstOrDefault(a => a.TagIdentifier == "url");
+        var urlTag = ev.Tags!.FirstOrDefault(a => a.TagIdentifier == "u");
         var methodTag = ev.Tags!.FirstOrDefault(a => a.TagIdentifier == "method");
         if (string.IsNullOrEmpty(urlTag?.AdditionalData[0] as string) ||
             !new Uri((urlTag.AdditionalData[0] as string)!).AbsolutePath.Equals(Request.Path, StringComparison.InvariantCultureIgnoreCase))

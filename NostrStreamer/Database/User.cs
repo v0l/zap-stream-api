@@ -12,30 +12,30 @@ public class User
     /// <summary>
     /// Most recent nostr event published 
     /// </summary>
-    public string? Event { get; init; }
+    public string? Event { get; set; }
     
     /// <summary>
     /// Sats balance
     /// </summary>
-    public long Balance { get; init; }
+    public long Balance { get; set; }
     
     /// <summary>
     /// Stream title
     /// </summary>
-    public string? Title { get; init; }
+    public string? Title { get; set; }
     
     /// <summary>
     /// Stream summary
     /// </summary>
-    public string? Summary { get; init; }
+    public string? Summary { get; set; }
     
     /// <summary>
     /// Stream cover image
     /// </summary>
-    public string? Image { get; init; }
+    public string? Image { get; set; }
     
     /// <summary>
     /// Comma seperated tags
     /// </summary>
-    public string? Tags { get; init; }
+    public string? Tags { get; set; }
 }
