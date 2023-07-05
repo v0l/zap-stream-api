@@ -11,6 +11,9 @@ namespace NostrStreamer.Services;
 
 public class StreamManager
 {
+    private const NostrKind StreamEventKind = (NostrKind)30_311;
+    private const NostrKind StreamChatKind = (NostrKind)1311;
+
     private readonly ILogger<StreamManager> _logger;
     private readonly StreamerContext _db;
     private readonly Config _config;
@@ -58,6 +61,7 @@ public class StreamManager
         var user = await GetUserFromStreamKey(streamKey);
         if (user == default) throw new Exception("No stream key found");
 
+        const long balanceAlertThreshold = 500;
         const double rate = 21.0d; // 21 sats/min
         var cost = Math.Round(rate * (duration / 60d));
         await _db.Users
@@ -65,6 +69,11 @@ public class StreamManager
             .ExecuteUpdateAsync(o => o.SetProperty(v => v.Balance, v => v.Balance - cost));
 
         _logger.LogInformation("Stream consumed {n} seconds for {pubkey} costing {cost} sats", duration, user.PubKey, cost);
+        if (user.Balance >= balanceAlertThreshold && user.Balance - cost < balanceAlertThreshold)
+        {
+            _nostr.Send(new NostrEventRequest(CreateStreamChat(user, $"Your balance is below {balanceAlertThreshold} sats, please topup")));
+        }
+
         if (user.Balance <= 0)
         {
             _logger.LogInformation("Kicking stream due to low balance");
@@ -106,6 +115,22 @@ public class StreamManager
         _nostr.Send(new NostrEventRequest(ev));
     }
 
+    private NostrEvent CreateStreamChat(User user, string message)
+    {
+        var pk = NostrPrivateKey.FromBech32(_config.PrivateKey);
+        var ev = new NostrEvent
+        {
+            Kind = StreamChatKind,
+            Content = message,
+            CreatedAt = DateTime.Now,
+            Tags = new NostrEventTags(
+                new NostrEventTag("a", $"{StreamEventKind}:{pk.DerivePublicKey().Hex}:{user.PubKey}")
+            )
+        };
+
+        return ev.Sign(pk);
+    }
+
     private NostrEvent CreateStreamEvent(User user, string state)
     {
         var tags = new List<NostrEventTag>()
@@ -126,7 +151,7 @@ public class StreamManager
 
         var ev = new NostrEvent
         {
-            Kind = (NostrKind)30_311,
+            Kind = StreamEventKind,
             Content = "",
             CreatedAt = DateTime.Now,
             Tags = new NostrEventTags(tags)
