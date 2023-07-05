@@ -43,9 +43,9 @@ public class SrsController : Controller
                 await _streamManager.StreamStopped(req.Stream);
                 return new();
             }
-            if (req.Action == "on_hls" && req.Duration.HasValue)
+            if (req.Action == "on_hls" && req.Duration.HasValue && !string.IsNullOrEmpty(req.ClientId))
             {
-                await _streamManager.ConsumeQuota(req.Stream, req.Duration.Value);
+                await _streamManager.ConsumeQuota(req.Stream, req.Duration.Value, req.ClientId);
                 return new();
             }
         }

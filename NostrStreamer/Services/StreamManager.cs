@@ -56,7 +56,7 @@ public class StreamManager
         await PublishEvent(user, ev);
     }
 
-    public async Task ConsumeQuota(string streamKey, double duration)
+    public async Task ConsumeQuota(string streamKey, double duration, string clientId)
     {
         var user = await GetUserFromStreamKey(streamKey);
         if (user == default) throw new Exception("No stream key found");
@@ -77,14 +77,7 @@ public class StreamManager
         if (user.Balance <= 0)
         {
             _logger.LogInformation("Kicking stream due to low balance");
-            var streams = await _srsApi.ListStreams();
-            var stream = streams.FirstOrDefault(a => a.Name == streamKey);
-            if (stream == default)
-            {
-                throw new Exception("Stream not found, cannot kick");
-            }
-
-            await _srsApi.KickClient(stream.Publish.Cid);
+            await _srsApi.KickClient(clientId);
         }
     }
 
