@@ -15,13 +15,15 @@ public class StreamManager
     private readonly StreamerContext _db;
     private readonly Config _config;
     private readonly INostrClient _nostr;
+    private readonly SrsApi _srsApi;
 
-    public StreamManager(ILogger<StreamManager> logger, StreamerContext db, Config config, INostrClient nostr)
+    public StreamManager(ILogger<StreamManager> logger, StreamerContext db, Config config, INostrClient nostr, SrsApi srsApi)
     {
         _logger = logger;
         _db = db;
         _config = config;
         _nostr = nostr;
+        _srsApi = srsApi;
     }
 
     public async Task StreamStarted(string streamKey)
@@ -56,8 +58,8 @@ public class StreamManager
         var user = await GetUserFromStreamKey(streamKey);
         if (user == default) throw new Exception("No stream key found");
 
-        const double rate = 21.0d;
-        var cost = Math.Round(duration / 60d * rate);
+        const double rate = 21.0d; // 21 sats/min
+        var cost = Math.Round(rate * (duration / 60d));
         await _db.Users
             .Where(a => a.PubKey == user.PubKey)
             .ExecuteUpdateAsync(o => o.SetProperty(v => v.Balance, v => v.Balance - cost));
@@ -65,7 +67,15 @@ public class StreamManager
         _logger.LogInformation("Stream consumed {n} seconds for {pubkey} costing {cost} sats", duration, user.PubKey, cost);
         if (user.Balance <= 0)
         {
-            throw new Exception("User balance empty");
+            _logger.LogInformation("Kicking stream due to low balance");
+            var streams = await _srsApi.ListStreams();
+            var stream = streams.FirstOrDefault(a => a.Name == streamKey);
+            if (stream == default)
+            {
+                throw new Exception("Stream not found, cannot kick");
+            }
+
+            await _srsApi.KickClient(stream.Publish.Cid);
         }
     }
 
