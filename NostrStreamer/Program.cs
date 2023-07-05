@@ -21,7 +21,7 @@ internal static class Program
         services.AddCors();
         services.AddMemoryCache();
         services.AddHttpClient();
-        services.AddControllers();
+        services.AddControllers().AddNewtonsoftJson();
         services.AddSingleton(config);
         
         // nostr auth
