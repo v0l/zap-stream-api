@@ -71,7 +71,8 @@ public class StreamManager
         _logger.LogInformation("Stream consumed {n} seconds for {pubkey} costing {cost} sats", duration, user.PubKey, cost);
         if (user.Balance >= balanceAlertThreshold && user.Balance - cost < balanceAlertThreshold)
         {
-            _nostr.Send(new NostrEventRequest(CreateStreamChat(user, $"Your balance is below {balanceAlertThreshold} sats, please topup")));
+            _nostr.Send(new NostrEventRequest(CreateStreamChat(user,
+                $"Your balance is below {balanceAlertThreshold} sats, please topup")));
         }
 
         if (user.Balance <= 0)
@@ -81,7 +82,7 @@ public class StreamManager
         }
     }
 
-    public async Task PatchEvent(string pubkey, string? title, string? summary, string? image)
+    public async Task PatchEvent(string pubkey, string? title, string? summary, string? image, string[]? tags)
     {
         var user = await _db.Users.SingleOrDefaultAsync(a => a.PubKey == pubkey);
         if (user == default) throw new Exception("User not found");
@@ -89,6 +90,7 @@ public class StreamManager
         user.Title = title;
         user.Summary = summary;
         user.Image = image;
+        user.Tags = string.Join(",", tags ?? Array.Empty<string>());
 
         var existingEvent = user.Event != default ? JsonConvert.DeserializeObject<NostrEvent>(user.Event, NostrSerializer.Settings) : null;
         var ev = CreateStreamEvent(user, existingEvent?.Tags?.FindFirstTagValue("status") ?? "ended");

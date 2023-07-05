@@ -12,4 +12,7 @@ public class PatchEvent
     
     [JsonProperty("image")]
     public string Image { get; init; } = null!;
+
+    [JsonProperty("tags")]
+    public string[] Tags { get; init; } = Array.Empty<string>();
 }
