@@ -91,7 +91,7 @@ public class StreamManager
         user.Image = image;
 
         var existingEvent = user.Event != default ? JsonConvert.DeserializeObject<NostrEvent>(user.Event, NostrSerializer.Settings) : null;
-        var ev = CreateStreamEvent(user, existingEvent?.Tags?.FindFirstTagValue("status") ?? "planned");
+        var ev = CreateStreamEvent(user, existingEvent?.Tags?.FindFirstTagValue("status") ?? "ended");
         user.Event = JsonConvert.SerializeObject(ev, NostrSerializer.Settings);
 
         await _db.SaveChangesAsync();
