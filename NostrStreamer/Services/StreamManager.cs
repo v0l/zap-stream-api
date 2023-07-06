@@ -90,7 +90,7 @@ public class StreamManager
         user.Title = title;
         user.Summary = summary;
         user.Image = image;
-        user.Tags = string.Join(",", tags ?? Array.Empty<string>());
+        user.Tags = tags != null ? string.Join(",", tags) : null;
 
         var existingEvent = user.Event != default ? JsonConvert.DeserializeObject<NostrEvent>(user.Event, NostrSerializer.Settings) : null;
         var ev = CreateStreamEvent(user, existingEvent?.Tags?.FindFirstTagValue("status") ?? "ended");
@@ -139,9 +139,10 @@ public class StreamManager
             new("p", user.PubKey, "", "host")
         };
 
-        foreach (var tag in user.Tags?.Split(",") ?? Array.Empty<string>())
+        foreach (var tag in !string.IsNullOrEmpty(user.Tags) ?
+                     user.Tags.Split(",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) : Array.Empty<string>())
         {
-            tags.Add(new("t", tag.Trim()));
+            tags.Add(new("t", tag));
         }
 
         var ev = new NostrEvent

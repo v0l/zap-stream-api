@@ -79,7 +79,7 @@ public class NostrListener : IDisposable
 
         comm.Name = uri.Host;
         comm.ReconnectTimeout = null; //TimeSpan.FromSeconds(30);
-        comm.ErrorReconnectTimeout = TimeSpan.FromSeconds(60);
+        comm.ErrorReconnectTimeout = TimeSpan.FromSeconds(2);
 
         comm.ReconnectionHappened.Subscribe(info => OnCommunicatorReconnection(info, comm.Name));
         comm.DisconnectionHappened.Subscribe(info =>
