@@ -18,6 +18,12 @@ public class SrsApi
         return rsp!.Streams;
     }
 
+    public async Task<List<Client>> ListClients()
+    {
+        var rsp = await _client.GetFromJsonAsync<ListClientsResponse>("/api/v1/clients");
+        return rsp!.Clients;
+    }
+    
     public async Task KickClient(string clientId)
     {
         await _client.SendAsync(new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/clients/{clientId}"));
@@ -128,3 +134,55 @@ public class Video
     [JsonProperty("height")]
     public int? Height { get; set; }
 }
+
+public class Client
+{
+    [JsonProperty("id")]
+    public string Id { get; set; }
+
+    [JsonProperty("vhost")]
+    public string Vhost { get; set; }
+
+    [JsonProperty("stream")]
+    public string Stream { get; set; }
+
+    [JsonProperty("ip")]
+    public string Ip { get; set; }
+
+    [JsonProperty("pageUrl")]
+    public string PageUrl { get; set; }
+
+    [JsonProperty("swfUrl")]
+    public string SwfUrl { get; set; }
+
+    [JsonProperty("tcUrl")]
+    public string TcUrl { get; set; }
+
+    [JsonProperty("url")]
+    public string Url { get; set; }
+
+    [JsonProperty("type")]
+    public string Type { get; set; }
+
+    [JsonProperty("publish")]
+    public bool Publish { get; set; }
+
+    [JsonProperty("alive")]
+    public double? Alive { get; set; }
+
+    [JsonProperty("kbps")]
+    public Kbps Kbps { get; set; }
+}
+
+public class ListClientsResponse
+{
+    [JsonProperty("code")]
+    public int? Code { get; set; }
+
+    [JsonProperty("server")]
+    public string Server { get; set; }
+
+    [JsonProperty("clients")]
+    public List<Client> Clients { get; set; }
+}
+

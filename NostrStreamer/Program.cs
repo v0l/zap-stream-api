@@ -49,6 +49,7 @@ internal static class Program
         // streaming services
         services.AddTransient<StreamManager>();
         services.AddTransient<SrsApi>();
+        services.AddHostedService<BackgroundStreamManager>();
         
         // lnd services
         services.AddSingleton<LndNode>();

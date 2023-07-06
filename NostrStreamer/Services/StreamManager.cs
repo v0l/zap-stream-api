@@ -92,13 +92,25 @@ public class StreamManager
         user.Image = image;
         user.Tags = tags != null ? string.Join(",", tags) : null;
 
-        var existingEvent = user.Event != default ? JsonConvert.DeserializeObject<NostrEvent>(user.Event, NostrSerializer.Settings) : null;
-        var ev = CreateStreamEvent(user, existingEvent?.Tags?.FindFirstTagValue("status") ?? "ended");
+        var ev = CreateStreamEvent(user);
         user.Event = JsonConvert.SerializeObject(ev, NostrSerializer.Settings);
 
         await _db.SaveChangesAsync();
-
         _nostr.Send(new NostrEventRequest(ev));
+    }
+
+    public async Task UpdateViewers(string streamKey, int viewers)
+    {
+        var user = await GetUserFromStreamKey(streamKey);
+        if (user == default) throw new Exception("No stream key found");
+
+        var existingEvent = user.GetNostrEvent();
+        var oldViewers = existingEvent?.Tags?.FindFirstTagValue("viewers");
+        if (string.IsNullOrEmpty(oldViewers) || int.Parse(oldViewers) != viewers)
+        {
+            var ev = CreateStreamEvent(user, viewers: viewers);
+            await PublishEvent(user, ev);
+        }
     }
 
     private async Task PublishEvent(User user, NostrEvent ev)
@@ -126,18 +138,31 @@ public class StreamManager
         return ev.Sign(pk);
     }
 
-    private NostrEvent CreateStreamEvent(User user, string state)
+    private NostrEvent CreateStreamEvent(User user, string? state = null, int? viewers = null)
     {
-        var tags = new List<NostrEventTag>()
+        var existingEvent = user.GetNostrEvent();
+        var status = state ?? existingEvent?.Tags?.FindFirstTagValue("status") ?? "ended";
+
+        var tags = new List<NostrEventTag>
         {
             new("d", user.PubKey),
             new("title", user.Title ?? ""),
             new("summary", user.Summary ?? ""),
             new("streaming", GetStreamUrl(user)),
             new("image", user.Image ?? ""),
-            new("status", state),
+            new("status", status),
             new("p", user.PubKey, "", "host")
         };
+
+        if (status == "live")
+        {
+            var starts = existingEvent?.Tags?.FindFirstTagValue("starts") ?? DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+            tags.Add(new ("starts", starts));
+            tags.Add(
+                new("current_participants",
+                    (viewers.HasValue ? viewers.ToString() : null) ??
+                    existingEvent?.Tags?.FindFirstTagValue("current_participants") ?? "0"));
+        }
 
         foreach (var tag in !string.IsNullOrEmpty(user.Tags) ?
                      user.Tags.Split(",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) : Array.Empty<string>())
