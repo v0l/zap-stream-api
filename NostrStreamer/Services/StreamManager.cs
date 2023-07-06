@@ -82,7 +82,7 @@ public class StreamManager
         }
     }
 
-    public async Task PatchEvent(string pubkey, string? title, string? summary, string? image, string[]? tags)
+    public async Task PatchEvent(string pubkey, string? title, string? summary, string? image, string[]? tags, string? contentWarning)
     {
         var user = await _db.Users.SingleOrDefaultAsync(a => a.PubKey == pubkey);
         if (user == default) throw new Exception("User not found");
@@ -91,6 +91,7 @@ public class StreamManager
         user.Summary = summary;
         user.Image = image;
         user.Tags = tags != null ? string.Join(",", tags) : null;
+        user.ContentWarning = contentWarning;
 
         var ev = CreateStreamEvent(user);
         user.Event = JsonConvert.SerializeObject(ev, NostrSerializer.Settings);
@@ -151,7 +152,8 @@ public class StreamManager
             new("streaming", GetStreamUrl(user)),
             new("image", user.Image ?? ""),
             new("status", status),
-            new("p", user.PubKey, "", "host")
+            new("p", user.PubKey, "", "host"),
+            new("relays", _config.Relays),
         };
 
         if (status == "live")
@@ -162,6 +164,11 @@ public class StreamManager
                 new("current_participants",
                     (viewers.HasValue ? viewers.ToString() : null) ??
                     existingEvent?.Tags?.FindFirstTagValue("current_participants") ?? "0"));
+
+            if (!string.IsNullOrEmpty(user.ContentWarning))
+            {
+                tags.Add(new("content-warning", user.ContentWarning));
+            }
         }
 
         foreach (var tag in !string.IsNullOrEmpty(user.Tags) ?

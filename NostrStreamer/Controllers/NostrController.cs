@@ -71,7 +71,7 @@ public class NostrController : Controller
         var pubkey = GetPubKey();
         if (string.IsNullOrEmpty(pubkey)) return Unauthorized();
 
-        await _streamManager.PatchEvent(pubkey, req.Title, req.Summary, req.Image, req.Tags);
+        await _streamManager.PatchEvent(pubkey, req.Title, req.Summary, req.Image, req.Tags, req.ContentWarning);
         return Accepted();
     }
 

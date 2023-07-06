@@ -15,4 +15,7 @@ public class PatchEvent
 
     [JsonProperty("tags")]
     public string[] Tags { get; init; } = Array.Empty<string>();
+    
+    [JsonProperty("content_warning")]
+    public string? ContentWarning { get; init; }
 }

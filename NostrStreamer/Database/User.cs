@@ -38,6 +38,11 @@ public class User
     /// Comma seperated tags
     /// </summary>
     public string? Tags { get; set; }
+    
+    /// <summary>
+    /// Any content warning tag (NIP-36)
+    /// </summary>
+    public string? ContentWarning { get; set; }
 
     /// <summary>
     /// Concurrency token

@@ -17,5 +17,8 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(a => a.Version)
             .IsRowVersion();
+
+        builder.Property(a => a.Tags);
+        builder.Property(a => a.ContentWarning);
     }
 }
