@@ -62,11 +62,13 @@ public class StreamManager
         if (user == default) throw new Exception("No stream key found");
 
         const long balanceAlertThreshold = 500;
-        const double rate = 21.0d; // 21 sats/min
-        var cost = Math.Round(rate * (duration / 60d));
-        await _db.Users
-            .Where(a => a.PubKey == user.PubKey)
-            .ExecuteUpdateAsync(o => o.SetProperty(v => v.Balance, v => v.Balance - cost));
+        var cost = (int)Math.Ceiling(_config.Cost * (duration / 60d));
+        if (cost > 0)
+        {
+            await _db.Users
+                .Where(a => a.PubKey == user.PubKey)
+                .ExecuteUpdateAsync(o => o.SetProperty(v => v.Balance, v => v.Balance - cost));
+        }
 
         _logger.LogInformation("Stream consumed {n} seconds for {pubkey} costing {cost} sats", duration, user.PubKey, cost);
         if (user.Balance >= balanceAlertThreshold && user.Balance - cost < balanceAlertThreshold)

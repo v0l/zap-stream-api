@@ -57,7 +57,7 @@ public class NostrController : Controller
             Quota = new()
             {
                 Unit = "min",
-                Rate = 21,
+                Rate = _config.Cost,
                 Remaining = user.Balance
             }
         };

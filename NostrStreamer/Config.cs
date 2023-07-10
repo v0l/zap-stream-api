@@ -36,6 +36,11 @@ public class Config
     public string[] Relays { get; init; } = Array.Empty<string>();
 
     public LndConfig Lnd { get; init; } = null!;
+
+    /// <summary>
+    /// Cost/min
+    /// </summary>
+    public int Cost { get; init; } = 10;
 }
 
 public class LndConfig

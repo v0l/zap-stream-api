@@ -7,6 +7,7 @@ services:
       - "1935:1935"
       - "1985:1985"
       - "8082:8080"
+      - "8003:8000"
   nostr:
     image: scsibug/nostr-rs-relay
     ports:
