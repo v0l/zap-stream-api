@@ -39,7 +39,7 @@ public class NostrController : Controller
             user = new()
             {
                 PubKey = pk,
-                Balance = 0,
+                Balance = 1000,
                 StreamKey = Guid.NewGuid().ToString()
             };
 
