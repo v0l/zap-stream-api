@@ -56,9 +56,8 @@ public class StreamManager
         await PublishEvent(user, ev);
     }
 
-    public async Task ConsumeQuota(string streamKey, double duration, string clientId, string app)
+    public async Task ConsumeQuota(string streamKey, double duration, string clientId)
     {
-        if (!app.EndsWith("/source")) return;
         var user = await GetUserFromStreamKey(streamKey);
         if (user == default) throw new Exception("No stream key found");
 

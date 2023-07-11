@@ -33,19 +33,28 @@ public class SrsController : Controller
                 };
             }
 
-            if (req.Action == "on_publish")
+            if (req.App.EndsWith("/source"))
             {
-                await _streamManager.StreamStarted(req.Stream);
-                return new();
+                if (req.Action == "on_publish")
+                {
+                    await _streamManager.StreamStarted(req.Stream);
+                    return new();
+                }
+
+                if (req.Action == "on_unpublish")
+                {
+                    await _streamManager.StreamStopped(req.Stream);
+                    return new();
+                }
+
+                if (req.Action == "on_hls" && req.Duration.HasValue && !string.IsNullOrEmpty(req.ClientId))
+                {
+                    await _streamManager.ConsumeQuota(req.Stream, req.Duration.Value, req.ClientId);
+                    return new();
+                }
             }
-            if (req.Action == "on_unpublish")
+            else
             {
-                await _streamManager.StreamStopped(req.Stream);
-                return new();
-            }
-            if (req.Action == "on_hls" && req.Duration.HasValue && !string.IsNullOrEmpty(req.ClientId))
-            {
-                await _streamManager.ConsumeQuota(req.Stream, req.Duration.Value, req.ClientId, req.App);
                 return new();
             }
         }
