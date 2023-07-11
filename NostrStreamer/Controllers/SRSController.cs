@@ -25,7 +25,7 @@ public class SrsController : Controller
         try
         {
             if (string.IsNullOrEmpty(req.Stream) || string.IsNullOrEmpty(req.App) || string.IsNullOrEmpty(req.Stream) ||
-                !req.App.Equals(_config.App, StringComparison.InvariantCultureIgnoreCase))
+                !req.App.StartsWith(_config.App, StringComparison.InvariantCultureIgnoreCase))
             {
                 return new()
                 {
@@ -45,7 +45,7 @@ public class SrsController : Controller
             }
             if (req.Action == "on_hls" && req.Duration.HasValue && !string.IsNullOrEmpty(req.ClientId))
             {
-                await _streamManager.ConsumeQuota(req.Stream, req.Duration.Value, req.ClientId);
+                await _streamManager.ConsumeQuota(req.Stream, req.Duration.Value, req.ClientId, req.App);
                 return new();
             }
         }

@@ -41,6 +41,11 @@ public class Config
     /// Cost/min
     /// </summary>
     public int Cost { get; init; } = 10;
+
+    /// <summary>
+    /// List of video variants
+    /// </summary>
+    public List<Variant> Variants { get; init; } = null!;
 }
 
 public class LndConfig
@@ -50,4 +55,12 @@ public class LndConfig
     public string CertPath { get; init; } = null!;
 
     public string MacaroonPath { get; init; } = null!;
+}
+
+public class Variant
+{
+    public string Name { get; init; } = null!;
+    public int Width { get; init; }
+    public int Height { get; init; }
+    public int Bandwidth { get; init; }
 }

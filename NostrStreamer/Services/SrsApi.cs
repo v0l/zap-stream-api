@@ -20,7 +20,7 @@ public class SrsApi
 
     public async Task<List<Client>> ListClients()
     {
-        var rsp = await _client.GetFromJsonAsync<ListClientsResponse>("/api/v1/clients");
+        var rsp = await _client.GetFromJsonAsync<ListClientsResponse>("/api/v1/clients/?count=10000");
         return rsp!.Clients;
     }
     
@@ -105,13 +105,13 @@ public class Stream
     public long? RecvBytes { get; set; }
 
     [JsonProperty("kbps")]
-    public Kbps Kbps { get; set; }
+    public Kbps? Kbps { get; set; }
 
     [JsonProperty("publish")]
     public Publish Publish { get; set; }
 
     [JsonProperty("video")]
-    public Video Video { get; set; }
+    public Video? Video { get; set; }
 
     [JsonProperty("audio")]
     public Audio Audio { get; set; }
