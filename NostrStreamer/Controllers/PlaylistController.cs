@@ -85,14 +85,18 @@ public class PlaylistController : Controller
             return;
         }
 
+        var hlsCtx = await GetHlsCtx(key);
+        if (string.IsNullOrEmpty(hlsCtx))
+        {
+            Response.StatusCode = 404;
+            return;
+        }
         Response.ContentType = "application/x-mpegurl";
         await using var sw = new StreamWriter(Response.Body);
-
 
         var streams = await _srsApi.ListStreams();
         await sw.WriteLineAsync("#EXTM3U");
 
-        var hlsCtx = await GetHlsCtx(key);
         foreach (var variant in _config.Variants.OrderBy(a => a.Bandwidth))
         {
             var stream = streams.FirstOrDefault(a =>
@@ -129,7 +133,7 @@ public class PlaylistController : Controller
 
     private async Task<string?> GetHlsCtx(string key)
     {
-        var path = $"/{_config.App}/{key}.m3u8";
+        var path = $"/{_config.App}/source/{key}.m3u8";
         var ub = new Uri(_config.SrsHttpHost, path);
         using var rsp = await _client.GetAsync(ub);
         if (!rsp.IsSuccessStatusCode)
