@@ -26,7 +26,7 @@ public class BackgroundStreamManager : BackgroundService
                 var streams = clients.Where(a => !a.Publish).GroupBy(a => a.Url);
                 foreach (var stream in streams)
                 {
-                    var viewers = stream.Count();
+                    var viewers = stream.Select(a => a.Ip).Distinct().Count();
                     var streamKey = stream.Key.Split("/").Last();
                     await streamManager.UpdateViewers(streamKey, viewers);
                 }
