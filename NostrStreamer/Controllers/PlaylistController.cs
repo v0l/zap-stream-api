@@ -48,7 +48,8 @@ public class PlaylistController : Controller
         Response.ContentType = "application/x-mpegurl";
         await using var sw = new StreamWriter(Response.Body);
 
-        using var rsp = await _client.GetAsync(ub.Uri);
+        var req = CreateProxyRequest(ub.Uri);
+        using var rsp = await _client.SendAsync(req);
         if (!rsp.IsSuccessStatusCode)
         {
             Response.StatusCode = (int)rsp.StatusCode;
@@ -135,7 +136,8 @@ public class PlaylistController : Controller
     {
         var path = $"/{_config.App}/source/{key}.m3u8";
         var ub = new Uri(_config.SrsHttpHost, path);
-        using var rsp = await _client.GetAsync(ub);
+        var req = CreateProxyRequest(ub);
+        using var rsp = await _client.SendAsync(req);
         if (!rsp.IsSuccessStatusCode)
         {
             return default;
@@ -161,10 +163,22 @@ public class PlaylistController : Controller
 
     private async Task ProxyRequest(string path)
     {
-        using var rsp = await _client.GetAsync(new Uri(_config.SrsHttpHost, path));
+        var req = CreateProxyRequest(new Uri(_config.SrsHttpHost, path));
+        using var rsp = await _client.SendAsync(req);
         Response.Headers.ContentType = rsp.Content.Headers.ContentType?.ToString();
 
         await rsp.Content.CopyToAsync(Response.Body);
+    }
+
+    private HttpRequestMessage CreateProxyRequest(Uri u)
+    {
+        var req = new HttpRequestMessage(HttpMethod.Get, u);
+        if (Request.Headers.TryGetValue("x-forward-for", out var xff) || HttpContext.Connection.RemoteIpAddress != default)
+        {
+            req.Headers.Add("x-forward-for", xff.Count > 0 ? xff.ToString() : HttpContext.Connection.RemoteIpAddress!.ToString());
+        }
+
+        return req;
     }
 
     private async Task<string?> GetStreamKey(string pubkey)
