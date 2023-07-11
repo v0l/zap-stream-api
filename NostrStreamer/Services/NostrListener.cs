@@ -85,6 +85,7 @@ public class NostrListener : IDisposable
         comm.DisconnectionHappened.Subscribe(info =>
             _logger.LogWarning("[{relay}] Disconnected, type: {type}, reason: {reason}", comm.Name, info.Type, info.CloseStatus));
 
+        comm.MessageReceived.Subscribe(msg => _logger.LogInformation(msg.Text));
         return comm;
     }
 
