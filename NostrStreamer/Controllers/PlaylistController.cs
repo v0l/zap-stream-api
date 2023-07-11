@@ -173,9 +173,9 @@ public class PlaylistController : Controller
     private HttpRequestMessage CreateProxyRequest(Uri u)
     {
         var req = new HttpRequestMessage(HttpMethod.Get, u);
-        if (Request.Headers.TryGetValue("x-forward-for", out var xff) || HttpContext.Connection.RemoteIpAddress != default)
+        if (Request.Headers.TryGetValue("X-Forwarded-For", out var xff) || HttpContext.Connection.RemoteIpAddress != default)
         {
-            req.Headers.Add("x-forward-for", xff.Count > 0 ? xff.ToString() : HttpContext.Connection.RemoteIpAddress!.ToString());
+            req.Headers.Add("X-Forwarded-For", xff.Count > 0 ? xff.ToString() : HttpContext.Connection.RemoteIpAddress!.ToString());
         }
 
         return req;
