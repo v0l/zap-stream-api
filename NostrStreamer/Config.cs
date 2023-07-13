@@ -38,9 +38,9 @@ public class Config
     public LndConfig Lnd { get; init; } = null!;
 
     /// <summary>
-    /// Cost/min
+    /// Cost/min (milli-sats)
     /// </summary>
-    public int Cost { get; init; } = 10;
+    public int Cost { get; init; } = 10_000;
 
     /// <summary>
     /// List of video variants

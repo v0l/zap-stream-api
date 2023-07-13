@@ -39,7 +39,7 @@ public class NostrController : Controller
             user = new()
             {
                 PubKey = pk,
-                Balance = 1000,
+                Balance = 1000_000,
                 StreamKey = Guid.NewGuid().ToString()
             };
 
@@ -58,7 +58,7 @@ public class NostrController : Controller
             {
                 Unit = "min",
                 Rate = _config.Cost,
-                Remaining = user.Balance
+                Remaining = (long)Math.Floor(user.Balance / 1000m)
             }
         };
 

@@ -15,7 +15,7 @@ public class User
     public string? Event { get; set; }
     
     /// <summary>
-    /// Sats balance
+    /// Milli sats balance
     /// </summary>
     public long Balance { get; set; }
     

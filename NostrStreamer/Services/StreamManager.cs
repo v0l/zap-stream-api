@@ -61,8 +61,8 @@ public class StreamManager
         var user = await GetUserFromStreamKey(streamKey);
         if (user == default) throw new Exception("No stream key found");
 
-        const long balanceAlertThreshold = 500;
-        var cost = (int)Math.Ceiling(_config.Cost * (duration / 60d));
+        const long balanceAlertThreshold = 500_000;
+        var cost = (long)Math.Ceiling(_config.Cost * (duration / 60d));
         if (cost > 0)
         {
             await _db.Users
@@ -70,11 +70,11 @@ public class StreamManager
                 .ExecuteUpdateAsync(o => o.SetProperty(v => v.Balance, v => v.Balance - cost));
         }
 
-        _logger.LogInformation("Stream consumed {n} seconds for {pubkey} costing {cost} sats", duration, user.PubKey, cost);
+        _logger.LogInformation("Stream consumed {n} seconds for {pubkey} costing {cost:#,##0} milli-sats", duration, user.PubKey, cost);
         if (user.Balance >= balanceAlertThreshold && user.Balance - cost < balanceAlertThreshold)
         {
             _nostr.Send(new NostrEventRequest(CreateStreamChat(user,
-                $"Your balance is below {balanceAlertThreshold} sats, please topup")));
+                $"Your balance is below {(int)(balanceAlertThreshold / 1000m)} sats, please topup")));
         }
 
         if (user.Balance <= 0)
@@ -161,7 +161,7 @@ public class StreamManager
         if (status == "live")
         {
             var starts = existingEvent?.Tags?.FindFirstTagValue("starts") ?? DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
-            tags.Add(new ("starts", starts));
+            tags.Add(new("starts", starts));
             tags.Add(
                 new("current_participants",
                     (viewers.HasValue ? viewers.ToString() : null) ??
