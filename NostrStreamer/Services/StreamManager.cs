@@ -108,6 +108,8 @@ public class StreamManager
         if (user == default) throw new Exception("No stream key found");
 
         var existingEvent = user.GetNostrEvent();
+        if (existingEvent?.Tags != default && (existingEvent.Tags.FindFirstTagValue("status")?.Equals("ended") ?? false)) return;
+
         var oldViewers = existingEvent?.Tags?.FindFirstTagValue("current_participants");
         if (string.IsNullOrEmpty(oldViewers) || int.Parse(oldViewers) != viewers)
         {
