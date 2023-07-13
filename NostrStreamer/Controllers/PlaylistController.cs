@@ -16,9 +16,10 @@ public class PlaylistController : Controller
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly HttpClient _client;
     private readonly SrsApi _srsApi;
+    private readonly ViewCounter _viewCounter;
 
     public PlaylistController(Config config, IMemoryCache cache, ILogger<PlaylistController> logger, IServiceScopeFactory scopeFactory,
-        HttpClient client, SrsApi srsApi)
+        HttpClient client, SrsApi srsApi, ViewCounter viewCounter)
     {
         _config = config;
         _cache = cache;
@@ -26,10 +27,11 @@ public class PlaylistController : Controller
         _scopeFactory = scopeFactory;
         _client = client;
         _srsApi = srsApi;
+        _viewCounter = viewCounter;
     }
 
     [HttpGet("{variant}/{pubkey}.m3u8")]
-    public async Task RewritePlaylist([FromRoute] string pubkey, [FromRoute] string variant)
+    public async Task RewritePlaylist([FromRoute] string pubkey, [FromRoute] string variant, [FromQuery(Name = "hls_ctx")] string hlsCtx)
     {
         var key = await GetStreamKey(pubkey);
         if (string.IsNullOrEmpty(key))
@@ -74,6 +76,7 @@ public class PlaylistController : Controller
         }
 
         Response.Body.Close();
+        _viewCounter.Activity(key, hlsCtx);
     }
 
     [HttpGet("{pubkey}.m3u8")]
@@ -92,6 +95,7 @@ public class PlaylistController : Controller
             Response.StatusCode = 404;
             return;
         }
+
         Response.ContentType = "application/x-mpegurl";
         await using var sw = new StreamWriter(Response.Body);
 
@@ -113,7 +117,9 @@ public class PlaylistController : Controller
             await sw.WriteLineAsync(
                 $"#EXT-X-STREAM-INF:{string.Join(",", allArgs)},CODECS=\"avc1.640028,mp4a.40.2\"");
 
-            var u = new Uri(_config.DataHost, $"{variant.Name}/{pubkey}.m3u8{(!string.IsNullOrEmpty(hlsCtx) ? $"?hls_ctx={hlsCtx}" : "")}");
+            var u = new Uri(_config.DataHost,
+                $"{variant.Name}/{pubkey}.m3u8{(!string.IsNullOrEmpty(hlsCtx) ? $"?hls_ctx={hlsCtx}" : "")}");
+
             await sw.WriteLineAsync(u.ToString());
         }
     }

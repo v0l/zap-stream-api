@@ -50,6 +50,8 @@ internal static class Program
         services.AddTransient<StreamManager>();
         services.AddTransient<SrsApi>();
         services.AddHostedService<BackgroundStreamManager>();
+        services.AddSingleton<ViewCounter>();
+        services.AddHostedService<ViewCounterDecay>();
         
         // lnd services
         services.AddSingleton<LndNode>();

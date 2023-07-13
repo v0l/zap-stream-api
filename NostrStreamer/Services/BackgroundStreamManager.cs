@@ -21,14 +21,13 @@ public class BackgroundStreamManager : BackgroundService
 
                 var streamManager = scope.ServiceProvider.GetRequiredService<StreamManager>();
                 var srsApi = scope.ServiceProvider.GetRequiredService<SrsApi>();
+                var viewCounter = scope.ServiceProvider.GetRequiredService<ViewCounter>();
 
-                var clients = await srsApi.ListClients();
-                var streams = clients.Where(a => !a.Publish).GroupBy(a => a.Url);
-                foreach (var stream in streams)
+                var streams = await srsApi.ListStreams();
+                foreach (var stream in streams.GroupBy(a => a.Name))
                 {
-                    var viewers = 0; //stream.Select(a => a.Ip).Distinct().Count();
-                    var streamKey = stream.Key.Split("/").Last();
-                    await streamManager.UpdateViewers(streamKey, viewers);
+                    var viewers = viewCounter.Current(stream.Key);
+                    await streamManager.UpdateViewers(stream.Key, viewers);
                 }
             }
             catch (Exception ex)
