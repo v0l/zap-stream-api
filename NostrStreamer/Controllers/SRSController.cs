@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using NostrStreamer.Services;
+using NostrStreamer.Services.StreamManager;
 
 namespace NostrStreamer.Controllers;
 
@@ -8,14 +8,12 @@ namespace NostrStreamer.Controllers;
 public class SrsController : Controller
 {
     private readonly ILogger<SrsController> _logger;
-    private readonly Config _config;
-    private readonly StreamManager _streamManager;
+    private readonly StreamManagerFactory _streamManagerFactory;
 
-    public SrsController(ILogger<SrsController> logger, Config config, StreamManager streamManager)
+    public SrsController(ILogger<SrsController> logger, StreamManagerFactory streamManager)
     {
         _logger = logger;
-        _config = config;
-        _streamManager = streamManager;
+        _streamManagerFactory = streamManager;
     }
 
     [HttpPost]
@@ -24,8 +22,7 @@ public class SrsController : Controller
         _logger.LogInformation("OnStream: {obj}", JsonConvert.SerializeObject(req));
         try
         {
-            if (string.IsNullOrEmpty(req.Stream) || string.IsNullOrEmpty(req.App) || string.IsNullOrEmpty(req.Stream) ||
-                !req.App.StartsWith(_config.App, StringComparison.InvariantCultureIgnoreCase))
+            if (string.IsNullOrEmpty(req.Stream) || string.IsNullOrEmpty(req.App))
             {
                 return new()
                 {
@@ -33,23 +30,44 @@ public class SrsController : Controller
                 };
             }
 
+            var appSplit = req.App.Split("/");
+            var streamManager = await _streamManagerFactory.ForStream(new StreamInfo
+            {
+                App = appSplit[0],
+                Variant = appSplit.Length > 1 ? appSplit[1] : "source",
+                ClientId = req.ClientId!,
+                StreamKey = req.Stream
+            });
+
+            if (req.Action == "on_forward")
+            {
+                var urls = await streamManager.OnForward();
+                return new SrsForwardHookReply
+                {
+                    Data = new()
+                    {
+                        Urls = urls
+                    }
+                };
+            }
+            
             if (req.App.EndsWith("/source"))
             {
                 if (req.Action == "on_publish")
                 {
-                    await _streamManager.StreamStarted(req.Stream);
+                    await streamManager.StreamStarted();
                     return new();
                 }
 
                 if (req.Action == "on_unpublish")
                 {
-                    await _streamManager.StreamStopped(req.Stream);
+                    await streamManager.StreamStopped();
                     return new();
                 }
 
                 if (req.Action == "on_hls" && req.Duration.HasValue && !string.IsNullOrEmpty(req.ClientId))
                 {
-                    await _streamManager.ConsumeQuota(req.Stream, req.Duration.Value, req.ClientId);
+                    await streamManager.ConsumeQuota(req.Duration.Value);
                     return new();
                 }
             }
@@ -74,6 +92,18 @@ public class SrsHookReply
 {
     [JsonProperty("code")]
     public int Code { get; init; }
+}
+
+public class SrsForwardHookReply : SrsHookReply
+{
+    [JsonProperty("data")]
+    public SrsUrlList Data { get; init; } = null!;
+}
+
+public class SrsUrlList
+{
+    [JsonProperty("urls")]
+    public List<string> Urls { get; init; } = new();
 }
 
 public class SrsHook

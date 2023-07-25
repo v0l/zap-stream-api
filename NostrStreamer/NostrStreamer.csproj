@@ -20,8 +20,11 @@
       <Content Include="..\docker-compose.yaml">
         <Link>docker-compose.yaml</Link>
       </Content>
-      <Content Include="..\docker\srs.conf">
-        <Link>srs.conf</Link>
+      <Content Include="..\docker\srs-edge.conf">
+        <Link>srs-edge.conf</Link>
+      </Content>
+      <Content Include="..\docker\srs-origin.conf">
+        <Link>srs-origin.conf</Link>
       </Content>
     </ItemGroup>
 
@@ -32,6 +35,7 @@
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
+      <PackageReference Include="LNURL" Version="0.0.30" />
       <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.19" />
       <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.8" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.8">
@@ -40,5 +44,9 @@
       </PackageReference>
       <PackageReference Include="Nostr.Client" Version="1.4.2" />
       <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.4" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Services\Abstract\" />
     </ItemGroup>
 </Project>

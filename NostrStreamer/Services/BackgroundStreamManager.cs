@@ -1,3 +1,7 @@
+using Microsoft.EntityFrameworkCore;
+using NostrStreamer.Database;
+using NostrStreamer.Services.StreamManager;
+
 namespace NostrStreamer.Services;
 
 public class BackgroundStreamManager : BackgroundService
@@ -19,15 +23,19 @@ public class BackgroundStreamManager : BackgroundService
             {
                 using var scope = _scopeFactory.CreateScope();
 
-                var streamManager = scope.ServiceProvider.GetRequiredService<StreamManager>();
-                var srsApi = scope.ServiceProvider.GetRequiredService<SrsApi>();
-                var viewCounter = scope.ServiceProvider.GetRequiredService<ViewCounter>();
+                var streamManager = scope.ServiceProvider.GetRequiredService<StreamManagerFactory>();
+                var db = scope.ServiceProvider.GetRequiredService<StreamerContext>();
 
-                var streams = await srsApi.ListStreams();
-                foreach (var stream in streams.GroupBy(a => a.Name))
+                var liveStreams = await db.Streams
+                    .AsNoTracking()
+                    .Where(a => a.State == UserStreamState.Live)
+                    .Select(a => a.Id)
+                    .ToListAsync(cancellationToken: stoppingToken);
+
+                foreach (var id in liveStreams)
                 {
-                    var viewers = viewCounter.Current(stream.Key);
-                    await streamManager.UpdateViewers(stream.Key, viewers);
+                    var manager = await streamManager.ForStream(id);
+                    await manager.UpdateViewers();
                 }
             }
             catch (Exception ex)

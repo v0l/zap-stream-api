@@ -8,11 +8,6 @@ public class User
     /// Stream key
     /// </summary>
     public string StreamKey { get; init; } = null!;
-
-    /// <summary>
-    /// Most recent nostr event published 
-    /// </summary>
-    public string? Event { get; set; }
     
     /// <summary>
     /// Milli sats balance
@@ -50,4 +45,5 @@ public class User
     public uint Version { get; set; }
     
     public List<Payment> Payments { get; init; } = new();
+    public List<UserStream> Streams { get; init; } = new();
 }

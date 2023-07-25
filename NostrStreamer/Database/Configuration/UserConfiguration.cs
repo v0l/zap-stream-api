@@ -11,7 +11,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(a => a.StreamKey)
             .IsRequired();
 
-        builder.Property(a => a.Event);
         builder.Property(a => a.Balance)
             .IsRequired();
 

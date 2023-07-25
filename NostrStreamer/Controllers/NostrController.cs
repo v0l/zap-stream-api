@@ -4,11 +4,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Nostr.Client.Json;
-using Nostr.Client.Messages;
 using Nostr.Client.Utils;
 using NostrStreamer.ApiModel;
 using NostrStreamer.Database;
 using NostrStreamer.Services;
+using NostrStreamer.Services.StreamManager;
 
 namespace NostrStreamer.Controllers;
 
@@ -18,14 +18,14 @@ public class NostrController : Controller
 {
     private readonly StreamerContext _db;
     private readonly Config _config;
-    private readonly StreamManager _streamManager;
+    private readonly StreamManagerFactory _streamManagerFactory;
     private readonly LndNode _lnd;
 
-    public NostrController(StreamerContext db, Config config, StreamManager streamManager, LndNode lnd)
+    public NostrController(StreamerContext db, Config config, StreamManagerFactory streamManager, LndNode lnd)
     {
         _db = db;
         _config = config;
-        _streamManager = streamManager;
+        _streamManagerFactory = streamManager;
         _lnd = lnd;
     }
 
@@ -48,18 +48,23 @@ public class NostrController : Controller
             await _db.SaveChangesAsync();
         }
 
+        var endpoints = await _db.Endpoints.ToListAsync();
         var account = new Account
         {
-            Url = new Uri(_config.RtmpHost, _config.App).ToString(),
-            Key = user.StreamKey,
-            Event = !string.IsNullOrEmpty(user.Event) ? JsonConvert.DeserializeObject<NostrEvent>(user.Event, NostrSerializer.Settings) :
-                null,
-            Quota = new()
+            Event = null,
+            Endpoints = endpoints.Select(a => new AccountEndpoint()
             {
-                Unit = "min",
-                Rate = (int)Math.Ceiling(_config.Cost / 1000m),
-                Remaining = (long)Math.Floor(user.Balance / 1000m)
-            }
+                Name = a.Name,
+                Url = new Uri(_config.RtmpHost, a.App).ToString(),
+                Key = user.StreamKey,
+                Capabilities = a.Capabilities,
+                Cost = new()
+                {
+                    Unit = "min",
+                    Rate = a.Cost / 1000d
+                }
+            }).ToList(),
+            Balance = (long)Math.Floor(user.Balance / 1000m)
         };
 
         return Content(JsonConvert.SerializeObject(account, NostrSerializer.Settings), "application/json");
@@ -71,7 +76,8 @@ public class NostrController : Controller
         var pubkey = GetPubKey();
         if (string.IsNullOrEmpty(pubkey)) return Unauthorized();
 
-        await _streamManager.PatchEvent(pubkey, req.Title, req.Summary, req.Image, req.Tags, req.ContentWarning);
+        var streamManager = await _streamManagerFactory.ForCurrentStream(pubkey);
+        await streamManager.PatchEvent(req.Title, req.Summary, req.Image, req.Tags, req.ContentWarning);
         return Accepted();
     }
 

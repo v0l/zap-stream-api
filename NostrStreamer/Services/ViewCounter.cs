@@ -4,15 +4,15 @@ namespace NostrStreamer.Services;
 
 public class ViewCounter
 {
-    private readonly ConcurrentDictionary<string, Dictionary<string, DateTime>> _sessions = new();
+    private readonly ConcurrentDictionary<Guid, Dictionary<string, DateTime>> _sessions = new();
 
-    public void Activity(string key, string token)
+    public void Activity(Guid id, string token)
     {
-        if (!_sessions.ContainsKey(key))
+        if (!_sessions.ContainsKey(id))
         {
-            _sessions.TryAdd(key, new());
+            _sessions.TryAdd(id, new());
         }
-        if (_sessions.TryGetValue(key, out var x))
+        if (_sessions.TryGetValue(id, out var x))
         {
             x[token] = DateTime.Now;
         }
@@ -36,9 +36,9 @@ public class ViewCounter
         }
     }
 
-    public int Current(string key)
+    public int Current(Guid id)
     {
-        if (_sessions.TryGetValue(key, out var x))
+        if (_sessions.TryGetValue(id, out var x))
         {
             return x.Count;
         }

@@ -18,6 +18,12 @@ public class SrsApi
         return rsp!.Streams;
     }
 
+    public async Task<Stream> GetStream(string id)
+    {
+        var rsp = await _client.GetFromJsonAsync<Stream>($"/api/v1/streams/{id}");
+        return rsp!;
+    }
+
     public async Task<List<Client>> ListClients()
     {
         var rsp = await _client.GetFromJsonAsync<ListClientsResponse>("/api/v1/clients/?count=10000");

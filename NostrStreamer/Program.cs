@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Nostr.Client.Client;
 using NostrStreamer.Database;
 using NostrStreamer.Services;
+using NostrStreamer.Services.StreamManager;
 
 namespace NostrStreamer;
 
@@ -47,11 +48,13 @@ internal static class Program
         services.AddHostedService<NostrListenerLifetime>();
         
         // streaming services
-        services.AddTransient<StreamManager>();
         services.AddTransient<SrsApi>();
         services.AddHostedService<BackgroundStreamManager>();
         services.AddSingleton<ViewCounter>();
         services.AddHostedService<ViewCounterDecay>();
+        services.AddTransient<StreamEventBuilder>();
+        services.AddTransient<StreamManagerFactory>();
+        services.AddTransient<UserService>();
         
         // lnd services
         services.AddSingleton<LndNode>();

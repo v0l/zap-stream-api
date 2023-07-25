@@ -14,4 +14,14 @@ public class Payment
     public ulong Amount { get; init; }
     
     public DateTime Created { get; init; } = DateTime.UtcNow;
+    
+    public string? Nostr { get; init; }
+    
+    public PaymentType Type { get; init; }
+}
+
+public enum PaymentType
+{
+    Topup = 0,
+    Zap = 1
 }

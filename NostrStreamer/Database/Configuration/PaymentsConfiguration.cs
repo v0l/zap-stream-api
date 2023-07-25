@@ -19,7 +19,11 @@ public class PaymentsConfiguration : IEntityTypeConfiguration<Payment>
 
         builder.Property(a => a.Created)
             .IsRequired();
-        
+
+        builder.Property(a => a.Nostr);
+        builder.Property(a => a.Type)
+            .IsRequired();
+
         builder.HasOne(a => a.User)
             .WithMany(a => a.Payments)
             .HasForeignKey(a => a.PubKey);

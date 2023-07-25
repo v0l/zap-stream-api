@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using Nostr.Client.Json;
+using Nostr.Client.Keys;
 using Nostr.Client.Messages;
 using NostrStreamer.Database;
 
@@ -7,8 +8,91 @@ namespace NostrStreamer;
 
 public static class Extensions
 {
-    public static NostrEvent? GetNostrEvent(this User user)
+    public static NostrEvent? GetEvent(this UserStream us)
     {
-        return user.Event != default ? JsonConvert.DeserializeObject<NostrEvent>(user.Event, NostrSerializer.Settings) : null;
+        return JsonConvert.DeserializeObject<NostrEvent>(us.Event, NostrSerializer.Settings);
+    }
+
+    public static string GetPubKey(this Config cfg)
+    {
+        return NostrPrivateKey.FromBech32(cfg.PrivateKey).DerivePublicKey().Hex;
+    }
+
+    public static List<Variant> GetVariants(this IngestEndpoint ep)
+    {
+        return ep.Capabilities
+            .Where(a => a.StartsWith("variant"))
+            .Select(Variant.FromString).ToList();
+    }
+}
+
+public class Variant
+{
+    public int Width { get; init; }
+    public int Height { get; init; }
+    public int Bandwidth { get; init; }
+
+    public string SourceName => Bandwidth == -1 ? "source" : $"{Height}h";
+
+    /// <summary>
+    /// variant:{px}h:{bandwidth}
+    /// </summary>
+    /// <param name="str"></param>
+    /// <returns></returns>
+    /// <exception cref="FormatException"></exception>
+    public static Variant FromString(string str)
+    {
+        if (str.Equals("variant:source", StringComparison.InvariantCultureIgnoreCase))
+        {
+            return new()
+            {
+                Width = 0,
+                Height = 0,
+                Bandwidth = -1
+            };
+        }
+
+        var strSplit = str.Split(":");
+        if (strSplit.Length != 3 || !int.TryParse(strSplit[1][..^1], out var h) || !int.TryParse(strSplit[2], out var b))
+        {
+            throw new FormatException();
+        }
+
+        return new()
+        {
+            Height = h,
+            Width = (int)Math.Ceiling(h / 9m * 16m),
+            Bandwidth = b
+        };
+    }
+
+    public override string ToString()
+    {
+        if (Bandwidth == -1)
+        {
+            return "variant:source";
+        }
+
+        return $"variant:{SourceName}:{Bandwidth}";
+    }
+
+    public string ToResolutionArg()
+    {
+        if (Bandwidth == -1)
+        {
+            return string.Empty;
+        }
+
+        return $"RESOLUTION={Width}x{Height}";
+    }
+
+    public string ToBandwidthArg()
+    {
+        if (Bandwidth == -1)
+        {
+            return string.Empty;
+        }
+
+        return $"BANDWIDTH={Bandwidth * 1000}";
     }
 }

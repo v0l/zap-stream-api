@@ -13,11 +13,6 @@ public class Config
     public Uri RtmpHost { get; init; } = null!;
 
     /// <summary>
-    /// SRS app name
-    /// </summary>
-    public string App { get; init; } = "live";
-
-    /// <summary>
     /// SRS api server host
     /// </summary>
     public Uri SrsApiHost { get; init; } = null!;
@@ -32,20 +27,15 @@ public class Config
     /// </summary>
     public Uri DataHost { get; init; } = null!;
 
+    /// <summary>
+    /// Public URL for the api
+    /// </summary>
+    public Uri ApiHost { get; init; } = null!;
+
     public string PrivateKey { get; init; } = null!;
     public string[] Relays { get; init; } = Array.Empty<string>();
 
     public LndConfig Lnd { get; init; } = null!;
-
-    /// <summary>
-    /// Cost/min (milli-sats)
-    /// </summary>
-    public int Cost { get; init; } = 10_000;
-
-    /// <summary>
-    /// List of video variants
-    /// </summary>
-    public List<Variant> Variants { get; init; } = null!;
 }
 
 public class LndConfig
@@ -55,12 +45,4 @@ public class LndConfig
     public string CertPath { get; init; } = null!;
 
     public string MacaroonPath { get; init; } = null!;
-}
-
-public class Variant
-{
-    public string Name { get; init; } = null!;
-    public int Width { get; init; }
-    public int Height { get; init; }
-    public int Bandwidth { get; init; }
 }

@@ -1,13 +1,22 @@
 services:
-  srs:
-    image: ossrs/srs
+  srs-origin:
+    image: ossrs/srs:5
     volumes:
-      - "./docker/srs.conf:/usr/local/srs/conf/docker.conf"
+      - "./docker/srs-origin.conf:/usr/local/srs/conf/srs.conf"
     ports:
-      - "1935:1935"
-      - "1985:1985"
-      - "8082:8080"
-      - "8003:8000"
+      - "9001:1935"
+      - "9002:1985"
+      - "9003:8080"
+      - "9004:8000"
+  srs-edge:
+    image: ossrs/srs:5
+    volumes:
+      - "./docker/srs-edge.conf:/usr/local/srs/conf/srs.conf"
+    ports:
+      - "9005:1935"
+      - "9006:1985"
+      - "9007:8080"
+      - "9008:8000"
   nostr:
     image: scsibug/nostr-rs-relay
     ports:
