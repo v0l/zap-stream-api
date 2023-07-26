@@ -52,7 +52,7 @@ public class NostrController : Controller
 
         var account = new Account
         {
-            Event = !string.IsNullOrEmpty(latestEvent) ? JsonConvert.DeserializeObject<NostrEvent>(latestEvent) : null,
+            Event = !string.IsNullOrEmpty(latestEvent) ? JsonConvert.DeserializeObject<NostrEvent>(latestEvent, NostrSerializer.Settings) : null,
             Endpoints = endpoints.Select(a => new AccountEndpoint
             {
                 Name = a.Name,
