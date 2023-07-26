@@ -32,7 +32,7 @@ public class Variant
     public int Height { get; init; }
     public int Bandwidth { get; init; }
 
-    public string SourceName => Bandwidth == -1 ? "source" : $"{Height}h";
+    public string SourceName => Bandwidth == int.MaxValue ? "source" : $"{Height}h";
 
     /// <summary>
     /// variant:{px}h:{bandwidth}
@@ -48,7 +48,7 @@ public class Variant
             {
                 Width = 0,
                 Height = 0,
-                Bandwidth = -1
+                Bandwidth = int.MaxValue
             };
         }
 
@@ -68,7 +68,7 @@ public class Variant
 
     public override string ToString()
     {
-        if (Bandwidth == -1)
+        if (Bandwidth == int.MaxValue)
         {
             return "variant:source";
         }
@@ -78,7 +78,7 @@ public class Variant
 
     public string ToResolutionArg()
     {
-        if (Bandwidth == -1)
+        if (Bandwidth == int.MaxValue)
         {
             return string.Empty;
         }
@@ -88,7 +88,7 @@ public class Variant
 
     public string ToBandwidthArg()
     {
-        if (Bandwidth == -1)
+        if (Bandwidth == int.MaxValue)
         {
             return string.Empty;
         }
