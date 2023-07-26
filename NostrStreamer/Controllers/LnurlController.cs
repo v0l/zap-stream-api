@@ -1,9 +1,12 @@
+using System.Security.Cryptography;
+using System.Text;
 using BTCPayServer.Lightning;
 using LNURL;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Nostr.Client.Json;
 using Nostr.Client.Messages;
+using Nostr.Client.Utils;
 using NostrStreamer.Database;
 using NostrStreamer.Services;
 
@@ -41,10 +44,14 @@ public class LnurlController : Controller
     }
 
     [HttpGet("{key}")]
-    public async Task<IActionResult> PayUserBalance([FromRoute] string key, [FromQuery] long amount, [FromQuery] string? nostr)
+    public async Task<IActionResult> PayUserBalance([FromRoute] string key, [FromQuery] ulong amount, [FromQuery] string? nostr)
     {
         try
         {
+            var user = await _userService.GetUser(key);
+            if (user == default) return LnurlError("User not found");
+
+            string? descHash;
             if (!string.IsNullOrEmpty(nostr))
             {
                 var ev = JsonConvert.DeserializeObject<NostrEvent>(nostr, NostrSerializer.Settings);
@@ -53,9 +60,16 @@ public class LnurlController : Controller
                 {
                     throw new Exception("Invalid nostr event");
                 }
+
+                descHash = SHA256.HashData(Encoding.UTF8.GetBytes(nostr)).ToHex();
+            }
+            else
+            {
+                var metadata = GetMetadata(user);
+                descHash = SHA256.HashData(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(metadata))).ToHex();
             }
 
-            var invoice = await _userService.CreateTopup(key, (ulong)(amount / 1000), nostr);
+            var invoice = await _userService.CreateTopup(key, amount, descHash, nostr);
             return Json(new LNURLPayRequest.LNURLPayRequestCallbackResponse
             {
                 Pr = invoice

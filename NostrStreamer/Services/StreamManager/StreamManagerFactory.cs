@@ -84,23 +84,27 @@ public class StreamManagerFactory
 
             if (ep == default) throw new Exception("No endpoint found");
 
-            stream = new()
+            // create new stream entry for source only
+            if (info.Variant == "source")
             {
-                EndpointId = ep.Id,
-                PubKey = user.PubKey,
-                ClientId = info.ClientId,
-                State = UserStreamState.Planned
-            };
+                stream = new()
+                {
+                    EndpointId = ep.Id,
+                    PubKey = user.PubKey,
+                    ClientId = info.ClientId,
+                    State = UserStreamState.Planned
+                };
 
-            var ev = _eventBuilder.CreateStreamEvent(user, stream);
-            stream.Event = JsonConvert.SerializeObject(ev, NostrSerializer.Settings);
-            _db.Streams.Add(stream);
-            await _db.SaveChangesAsync();
-            
+                var ev = _eventBuilder.CreateStreamEvent(user, stream);
+                stream.Event = JsonConvert.SerializeObject(ev, NostrSerializer.Settings);
+                _db.Streams.Add(stream);
+                await _db.SaveChangesAsync();
+            }
+
             // replace again with new values
             stream = new()
             {
-                Id = stream.Id,
+                Id = stream?.Id ?? Guid.NewGuid(),
                 User = user,
                 Endpoint = ep,
                 ClientId = info.ClientId,

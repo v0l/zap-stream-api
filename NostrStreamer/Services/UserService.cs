@@ -1,0 +1,72 @@
+using Microsoft.EntityFrameworkCore;
+using Nostr.Client.Utils;
+using NostrStreamer.Database;
+
+namespace NostrStreamer.Services;
+
+public class UserService
+{
+    private readonly StreamerContext _db;
+    private readonly LndNode _lnd;
+
+    public UserService(StreamerContext db, LndNode lnd)
+    {
+        _db = db;
+        _lnd = lnd;
+    }
+
+    /// <summary>
+    /// Create new user account
+    /// </summary>
+    /// <param name="pubkey"></param>
+    /// <returns></returns>
+    public async Task<User> CreateAccount(string pubkey)
+    {
+        var user = new User()
+        {
+            PubKey = pubkey,
+            Balance = 1000_000,
+            StreamKey = Guid.NewGuid().ToString()
+        };
+
+        _db.Users.Add(user);
+        await _db.SaveChangesAsync();
+        return user;
+    }
+
+    /// <summary>
+    /// Create topup for a user
+    /// </summary>
+    /// <param name="pubkey"></param>
+    /// <param name="amount">milli-sats amount</param>
+    /// <param name="descHash"></param>
+    /// <param name="nostr"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    public async Task<string> CreateTopup(string pubkey, ulong amount, string? descHash, string? nostr)
+    {
+        var user = await GetUser(pubkey);
+        if (user == default) throw new Exception("No user found");
+
+        var invoice = await _lnd.AddInvoice(amount, TimeSpan.FromMinutes(10), $"Top up for {pubkey}", descHash);
+        _db.Payments.Add(new()
+        {
+            PubKey = pubkey,
+            Amount = amount / 1000,
+            Invoice = invoice.PaymentRequest,
+            PaymentHash = invoice.RHash.ToByteArray().ToHex(),
+            Nostr = nostr,
+            Type = string.IsNullOrEmpty(nostr) ? PaymentType.Topup : PaymentType.Zap
+        });
+
+        await _db.SaveChangesAsync();
+
+        return invoice.PaymentRequest;
+    }
+
+    public async Task<User?> GetUser(string pubkey)
+    {
+        return await _db.Users.AsNoTracking()
+            .SingleOrDefaultAsync(a => a.PubKey.Equals(pubkey));
+    }
+}

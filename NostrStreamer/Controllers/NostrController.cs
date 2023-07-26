@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Nostr.Client.Json;
-using Nostr.Client.Utils;
+using Nostr.Client.Messages;
 using NostrStreamer.ApiModel;
 using NostrStreamer.Database;
 using NostrStreamer.Services;
@@ -19,14 +19,14 @@ public class NostrController : Controller
     private readonly StreamerContext _db;
     private readonly Config _config;
     private readonly StreamManagerFactory _streamManagerFactory;
-    private readonly LndNode _lnd;
+    private readonly UserService _userService;
 
-    public NostrController(StreamerContext db, Config config, StreamManagerFactory streamManager, LndNode lnd)
+    public NostrController(StreamerContext db, Config config, StreamManagerFactory streamManager, UserService userService)
     {
         _db = db;
         _config = config;
         _streamManagerFactory = streamManager;
-        _lnd = lnd;
+        _userService = userService;
     }
 
     [HttpGet("account")]
@@ -36,23 +36,24 @@ public class NostrController : Controller
         if (user == default)
         {
             var pk = GetPubKey();
-            user = new()
-            {
-                PubKey = pk,
-                Balance = 1000_000,
-                StreamKey = Guid.NewGuid().ToString()
-            };
-
-            _db.Users.Add(user);
-
-            await _db.SaveChangesAsync();
+            user = await _userService.CreateAccount(pk);
         }
 
-        var endpoints = await _db.Endpoints.ToListAsync();
+        var endpoints = await _db.Endpoints
+            .AsNoTracking()
+            .ToListAsync();
+
+        var latestEvent = await _db.Streams
+            .AsNoTracking()
+            .Where(a => a.User.PubKey == user.PubKey)
+            .OrderByDescending(a => a.Starts)
+            .Select(a => a.Event)
+            .FirstOrDefaultAsync();
+
         var account = new Account
         {
-            Event = null,
-            Endpoints = endpoints.Select(a => new AccountEndpoint()
+            Event = !string.IsNullOrEmpty(latestEvent) ? JsonConvert.DeserializeObject<NostrEvent>(latestEvent) : null,
+            Endpoints = endpoints.Select(a => new AccountEndpoint
             {
                 Name = a.Name,
                 Url = new Uri(_config.RtmpHost, a.App).ToString(),
@@ -87,27 +88,17 @@ public class NostrController : Controller
         var pubkey = GetPubKey();
         if (string.IsNullOrEmpty(pubkey)) return Unauthorized();
 
-        var invoice = await _lnd.AddInvoice(amount * 1000, TimeSpan.FromMinutes(10), $"Top up for {pubkey}");
-        _db.Payments.Add(new()
-        {
-            PubKey = pubkey,
-            Amount = amount,
-            Invoice = invoice.PaymentRequest,
-            PaymentHash = invoice.RHash.ToByteArray().ToHex()
-        });
-
-        await _db.SaveChangesAsync();
-
+        var invoice = await _userService.CreateTopup(pubkey, amount * 1000, null, null);
         return Json(new
         {
-            pr = invoice.PaymentRequest
+            pr = invoice
         });
     }
 
     private async Task<User?> GetUser()
     {
         var pk = GetPubKey();
-        return await _db.Users.FirstOrDefaultAsync(a => a.PubKey == pk);
+        return await _userService.GetUser(pk);
     }
 
     private string GetPubKey()

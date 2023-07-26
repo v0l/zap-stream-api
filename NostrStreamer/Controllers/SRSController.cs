@@ -34,7 +34,7 @@ public class SrsController : Controller
             var streamManager = await _streamManagerFactory.ForStream(new StreamInfo
             {
                 App = appSplit[0],
-                Variant = appSplit.Length > 1 ? appSplit[1] : "source",
+                Variant = appSplit.Length > 1 ? appSplit[1] : "",
                 ClientId = req.ClientId!,
                 StreamKey = req.Stream
             });
@@ -42,15 +42,23 @@ public class SrsController : Controller
             if (req.Action == "on_forward")
             {
                 var urls = await streamManager.OnForward();
-                return new SrsForwardHookReply
+                if (urls.Count > 0)
                 {
-                    Data = new()
+                    return new SrsForwardHookReply
                     {
-                        Urls = urls
-                    }
+                        Data = new()
+                        {
+                            Urls = urls
+                        }
+                    };
+                }
+
+                return new()
+                {
+                    Code = 2 // invalid request
                 };
             }
-            
+
             if (req.App.EndsWith("/source"))
             {
                 if (req.Action == "on_publish")
@@ -78,7 +86,7 @@ public class SrsController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to start stream");
+            _logger.LogWarning("Failed to start stream: {message}", ex.Message);
         }
 
         return new()
