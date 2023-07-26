@@ -18,16 +18,21 @@ public class SrsApi
         return rsp!.Streams;
     }
 
-    public async Task<Stream> GetStream(string id)
+    public async Task<Stream?> GetStream(string id)
     {
-        var rsp = await _client.GetFromJsonAsync<Stream>($"/api/v1/streams/{id}");
-        return rsp!;
+        return await _client.GetFromJsonAsync<Stream>($"/api/v1/streams/{id}");
     }
 
     public async Task<List<Client>> ListClients()
     {
         var rsp = await _client.GetFromJsonAsync<ListClientsResponse>("/api/v1/clients/?count=10000");
         return rsp!.Clients;
+    }
+
+    public async Task<Client?> GetClient(string cid)
+    {
+        var rsp = await _client.GetFromJsonAsync<GetClientResponse>($"/api/v1/clients/{cid}");
+        return rsp?.Client;
     }
     
     public async Task KickClient(string clientId)
@@ -192,3 +197,14 @@ public class ListClientsResponse
     public List<Client> Clients { get; set; }
 }
 
+public class GetClientResponse
+{
+    [JsonProperty("code")]
+    public int? Code { get; set; }
+
+    [JsonProperty("server")]
+    public string Server { get; set; }
+
+    [JsonProperty("client")]
+    public Client Client { get; set; }
+}

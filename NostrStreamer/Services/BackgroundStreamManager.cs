@@ -25,6 +25,7 @@ public class BackgroundStreamManager : BackgroundService
 
                 var streamManager = scope.ServiceProvider.GetRequiredService<StreamManagerFactory>();
                 var db = scope.ServiceProvider.GetRequiredService<StreamerContext>();
+                var srs = scope.ServiceProvider.GetRequiredService<SrsApi>();
 
                 var liveStreams = await db.Streams
                     .AsNoTracking()
@@ -35,7 +36,15 @@ public class BackgroundStreamManager : BackgroundService
                 foreach (var id in liveStreams)
                 {
                     var manager = await streamManager.ForStream(id);
-                    await manager.UpdateViewers();
+                    var client = await srs.GetClient(manager.GetStream().ClientId);
+                    if (client != default)
+                    {
+                        await manager.UpdateViewers();
+                    }
+                    else
+                    {
+                        await manager.StreamStopped();
+                    }
                 }
             }
             catch (Exception ex)
