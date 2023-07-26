@@ -90,7 +90,7 @@ public class Variant
     {
         if (Bandwidth == int.MaxValue)
         {
-            return string.Empty;
+            return $"BANDWIDTH={20_000_000}";
         }
 
         return $"BANDWIDTH={Bandwidth * 1000}";
