@@ -30,46 +30,72 @@ public class PlaylistController : Controller
     [HttpGet("{variant}/{id}.m3u8")]
     public async Task RewritePlaylist([FromRoute] Guid id, [FromRoute] string variant, [FromQuery(Name = "hls_ctx")] string hlsCtx)
     {
-        var streamManager = await _streamManagerFactory.ForStream(id);
-        var userStream = streamManager.GetStream();
-
-        var path = $"/{userStream.Endpoint.App}/{variant}/{userStream.User.StreamKey}.m3u8";
-        var ub = new UriBuilder(_config.SrsHttpHost)
+        try
         {
-            Path = path,
-            Query = string.Join("&", Request.Query.Select(a => $"{a.Key}={a.Value}"))
-        };
+            var streamManager = await _streamManagerFactory.ForStream(id);
+            var userStream = streamManager.GetStream();
 
-        Response.ContentType = "application/x-mpegurl";
-        await using var sw = new StreamWriter(Response.Body);
-
-        var req = CreateProxyRequest(ub.Uri);
-        using var rsp = await _client.SendAsync(req);
-        if (!rsp.IsSuccessStatusCode)
-        {
-            Response.StatusCode = (int)rsp.StatusCode;
-            return;
-        }
-
-        await Response.StartAsync();
-        using var sr = new StreamReader(await rsp.Content.ReadAsStreamAsync());
-        while (await sr.ReadLineAsync() is { } line)
-        {
-            if (line.StartsWith("#EXTINF"))
+            var path = $"/{userStream.Endpoint.App}/{variant}/{userStream.User.StreamKey}.m3u8";
+            var ub = new UriBuilder(_config.SrsHttpHost)
             {
-                await sw.WriteLineAsync(line);
-                var trackPath = await sr.ReadLineAsync();
-                var seg = Regex.Match(trackPath!, @"-(\d+)\.ts");
-                await sw.WriteLineAsync($"{id}/{seg.Groups[1].Value}.ts");
-            }
-            else
-            {
-                await sw.WriteLineAsync(line);
-            }
-        }
+                Path = path,
+                Query = string.Join("&", Request.Query.Select(a => $"{a.Key}={a.Value}"))
+            };
 
-        Response.Body.Close();
-        _viewCounter.Activity(userStream.Id, hlsCtx);
+            Response.ContentType = "application/x-mpegurl";
+            await using var sw = new StreamWriter(Response.Body);
+
+            var req = CreateProxyRequest(ub.Uri);
+            using var rsp = await _client.SendAsync(req);
+            if (!rsp.IsSuccessStatusCode)
+            {
+                Response.StatusCode = (int)rsp.StatusCode;
+                return;
+            }
+
+            await Response.StartAsync();
+            using var sr = new StreamReader(await rsp.Content.ReadAsStreamAsync());
+            while (await sr.ReadLineAsync() is { } line)
+            {
+                if (line.StartsWith("#EXTINF"))
+                {
+                    await sw.WriteLineAsync(line);
+                    var trackPath = await sr.ReadLineAsync();
+                    var seg = Regex.Match(trackPath!, @"-(\d+)\.ts");
+                    await sw.WriteLineAsync($"{id}/{seg.Groups[1].Value}.ts");
+                }
+                else
+                {
+                    await sw.WriteLineAsync(line);
+                }
+            }
+
+            Response.Body.Close();
+            _viewCounter.Activity(userStream.Id, hlsCtx);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Failed to get stream for {stream} {message}", id, ex.Message);
+            Response.StatusCode = 404;
+        }
+    }
+
+    [HttpGet("{pubkey}.png")]
+    public async Task GetPreview([FromRoute] string pubkey)
+    {
+        try
+        {
+            var streamManager = await _streamManagerFactory.ForCurrentStream(pubkey);
+            var userStream = streamManager.GetStream();
+
+            var path = $"/{userStream.Endpoint.App}/{userStream.User.StreamKey}.png";
+            await ProxyRequest(path);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Failed to get preview image for {pubkey} {message}", pubkey, ex.Message);
+            Response.StatusCode = 404;
+        }
     }
 
     [HttpGet("{pubkey}.m3u8")]
@@ -117,7 +143,7 @@ public class PlaylistController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to get stream for {pubkey} {message}", pubkey, ex.Message);
+            _logger.LogWarning("Failed to get stream for {pubkey} {message}", pubkey, ex.Message);
             Response.StatusCode = 404;
         }
     }
@@ -125,11 +151,18 @@ public class PlaylistController : Controller
     [HttpGet("{variant}/{id}/{segment}")]
     public async Task GetSegment([FromRoute] Guid id, [FromRoute] string segment, [FromRoute] string variant)
     {
-        var streamManager = await _streamManagerFactory.ForStream(id);
-        var userStream = streamManager.GetStream();
+        try
+        {
+            var streamManager = await _streamManagerFactory.ForStream(id);
+            var userStream = streamManager.GetStream();
 
-        var path = $"/{userStream.Endpoint.App}/{variant}/{userStream.User.StreamKey}-{segment}";
-        await ProxyRequest(path);
+            var path = $"/{userStream.Endpoint.App}/{variant}/{userStream.User.StreamKey}-{segment}";
+            await ProxyRequest(path);
+        }
+        catch
+        {
+            Response.StatusCode = 404;
+        }
     }
 
     private async Task<string?> GetHlsCtx(UserStream stream)
