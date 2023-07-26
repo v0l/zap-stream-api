@@ -33,9 +33,9 @@ public class NostrStreamManager : IStreamManager
             throw new LowBalanceException("User balance empty");
         }
 
-        return Task.FromResult(new List<string>()
+        return Task.FromResult(new List<string>
         {
-            $"rtmp://localhost/{_context.UserStream.Endpoint.App}/{_context.User.StreamKey}?vhost={_context.UserStream.Endpoint.Forward}"
+            $"rtmp://127.0.0.1:1935/{_context.UserStream.Endpoint.App}/{_context.User.StreamKey}?vhost={_context.UserStream.Endpoint.Forward}"
         });
     }
 
