@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using Nostr.Client.Client;
+using Nostr.Client.Json;
 using Nostr.Client.Messages;
 using Nostr.Client.Requests;
 
@@ -24,7 +25,7 @@ public class ZapService
         {
             if (string.IsNullOrEmpty(zapRequest)) return;
 
-            var zapNote = JsonConvert.DeserializeObject<NostrEvent>(zapRequest);
+            var zapNote = JsonConvert.DeserializeObject<NostrEvent>(zapRequest, NostrSerializer.Settings);
             if (zapNote == default)
             {
                 _logger.LogWarning("Could not parse zap note {note}", zapRequest);
@@ -48,7 +49,7 @@ public class ZapService
 
             var zapReceiptSigned = zapReceipt.Sign(key);
 
-            var jsonZap = JsonConvert.SerializeObject(zapReceiptSigned);
+            var jsonZap = JsonConvert.SerializeObject(zapReceiptSigned, NostrSerializer.Settings);
             _logger.LogInformation("Created tip receipt {json}", jsonZap);
             _nostrClient.Send(new NostrEventRequest(zapReceiptSigned));
         }
