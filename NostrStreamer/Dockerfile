@@ -16,5 +16,9 @@ RUN dotnet publish "NostrStreamer.csproj" -c Release -o /app/publish /p:UseAppHo
 
 FROM base AS final
 WORKDIR /app
+RUN apt update \
+    && apt install -y --no-install-recommends ffmpeg  \
+    && apt clean \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "NostrStreamer.dll"]
