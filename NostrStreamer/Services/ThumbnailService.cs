@@ -1,0 +1,50 @@
+using FFMpegCore;
+using NostrStreamer.Database;
+
+namespace NostrStreamer.Services;
+
+public class ThumbnailService
+{
+    private const string Dir = "thumbs";
+    private readonly Config _config;
+    private readonly ILogger<ThumbnailService> _logger;
+
+    public ThumbnailService(Config config, ILogger<ThumbnailService> logger)
+    {
+        _config = config;
+        _logger = logger;
+        if (!Directory.Exists(Dir))
+        {
+            Directory.CreateDirectory(Dir);
+        }
+    }
+
+    public async Task GenerateThumb(UserStream stream)
+    {
+        var path = MapPath(stream.Id);
+        try
+        {
+            var cmd = FFMpegArguments
+                .FromUrlInput(new Uri(_config.RtmpHost, $"{stream.Endpoint.App}/{stream.User.StreamKey}"))
+                .OutputToFile(path, true, o => { o.ForceFormat("image2").WithCustomArgument("-vframes 1"); });
+
+            _logger.LogInformation("Running command {cmd}", cmd.Arguments);
+            await cmd.ProcessAsynchronously();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Failed to generate thumbnail {msg}", ex.Message);
+        }
+    }
+
+    public System.IO.Stream? GetThumbnail(Guid id)
+    {
+        var path = MapPath(id);
+        return File.Exists(path) ? new FileStream(path, FileMode.Open, FileAccess.Read) : null;
+    }
+
+    private string MapPath(Guid id)
+    {
+        return Path.Combine(Dir, $"{id}.jpg");
+    }
+}

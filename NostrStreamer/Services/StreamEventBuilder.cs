@@ -38,7 +38,7 @@ public class StreamEventBuilder
             new("title", user.Title ?? ""),
             new("summary", user.Summary ?? ""),
             new("streaming", new Uri(_config.DataHost, $"{user.PubKey}.m3u8").ToString()),
-            new("image", user.Image ?? new Uri(_config.DataHost, $"{user.PubKey}.png").ToString()),
+            new("image", string.IsNullOrEmpty(user.Image) ? new Uri(_config.DataHost, $"{stream.Id}.jpg").ToString() : user.Image),
             new("status", status),
             new("p", user.PubKey, "", "host"),
             new("relays", _config.Relays),
@@ -73,7 +73,7 @@ public class StreamEventBuilder
 
         return ev.Sign(NostrPrivateKey.FromBech32(_config.PrivateKey));
     }
-    
+
     public NostrEvent CreateStreamChat(UserStream stream, string message)
     {
         var pk = NostrPrivateKey.FromBech32(_config.PrivateKey);

@@ -15,9 +15,10 @@ public class PlaylistController : Controller
     private readonly SrsApi _srsApi;
     private readonly ViewCounter _viewCounter;
     private readonly StreamManagerFactory _streamManagerFactory;
+    private readonly ThumbnailService _thumbnailService;
 
     public PlaylistController(Config config, ILogger<PlaylistController> logger,
-        HttpClient client, SrsApi srsApi, ViewCounter viewCounter, StreamManagerFactory streamManagerFactory)
+        HttpClient client, SrsApi srsApi, ViewCounter viewCounter, StreamManagerFactory streamManagerFactory, ThumbnailService thumbnailService)
     {
         _config = config;
         _logger = logger;
@@ -25,6 +26,7 @@ public class PlaylistController : Controller
         _srsApi = srsApi;
         _viewCounter = viewCounter;
         _streamManagerFactory = streamManagerFactory;
+        _thumbnailService = thumbnailService;
     }
 
     [HttpGet("{variant}/{id}.m3u8")]
@@ -80,20 +82,29 @@ public class PlaylistController : Controller
         }
     }
 
-    [HttpGet("{pubkey}.png")]
-    public async Task GetPreview([FromRoute] string pubkey)
+    [HttpGet("{id}.jpg")]
+    public async Task GetPreview([FromRoute] Guid id)
     {
         try
         {
-            var streamManager = await _streamManagerFactory.ForCurrentStream(pubkey);
-            var userStream = streamManager.GetStream();
-
-            var path = $"/{userStream.Endpoint.App}/{userStream.User.StreamKey}.png";
-            await ProxyRequest(path);
+            var stream = _thumbnailService.GetThumbnail(id);
+            if (stream != default)
+            {
+                Response.ContentLength = stream.Length;
+                Response.ContentType = "image/jpg";
+                Response.Headers.CacheControl = "public, max-age=60";
+                await Response.StartAsync();
+                await stream.CopyToAsync(Response.Body);
+                await Response.CompleteAsync();
+            }
+            else
+            {
+                Response.StatusCode = 404;
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("Failed to get preview image for {pubkey} {message}", pubkey, ex.Message);
+            _logger.LogWarning("Failed to get preview image for {id} {message}", id, ex.Message);
             Response.StatusCode = 404;
         }
     }

@@ -56,6 +56,8 @@ internal static class Program
         services.AddTransient<StreamEventBuilder>();
         services.AddTransient<StreamManagerFactory>();
         services.AddTransient<UserService>();
+        services.AddTransient<ThumbnailService>();
+        services.AddHostedService<ThumbnailGenerator>();
         
         // lnd services
         services.AddSingleton<LndNode>();
