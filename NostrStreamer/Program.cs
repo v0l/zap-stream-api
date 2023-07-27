@@ -46,6 +46,7 @@ internal static class Program
         services.AddSingleton<INostrClient>(s => s.GetRequiredService<NostrMultiWebsocketClient>());
         services.AddSingleton<NostrListener>();
         services.AddHostedService<NostrListenerLifetime>();
+        services.AddTransient<ZapService>();
         
         // streaming services
         services.AddTransient<SrsApi>();

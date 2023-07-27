@@ -17,6 +17,11 @@ public static class Extensions
     {
         return NostrPrivateKey.FromBech32(cfg.PrivateKey).DerivePublicKey().Hex;
     }
+    
+    public static NostrPrivateKey GetPrivateKey(this Config cfg)
+    {
+        return NostrPrivateKey.FromBech32(cfg.PrivateKey);
+    }
 
     public static List<Variant> GetVariants(this IngestEndpoint ep)
     {

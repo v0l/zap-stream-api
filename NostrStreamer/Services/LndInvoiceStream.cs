@@ -43,6 +43,7 @@ public class LndInvoicesStream : BackgroundService
                     {
                         using var scope = _scopeFactory.CreateScope();
                         var db = scope.ServiceProvider.GetRequiredService<StreamerContext>();
+                        var zapService = scope.ServiceProvider.GetRequiredService<ZapService>();
 
                         try
                         {
@@ -56,6 +57,10 @@ public class LndInvoicesStream : BackgroundService
                                 payment.IsPaid = true;
                                 payment.User.Balance += (long)(payment.Amount * 1000L);
                                 await db.SaveChangesAsync(stoppingToken);
+                                if (!string.IsNullOrEmpty(payment.Nostr))
+                                {
+                                    zapService.HandlePaid(payment.Invoice, payment.Nostr);
+                                }
                             }
                         }
                         catch (Exception ex)
