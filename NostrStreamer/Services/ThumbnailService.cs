@@ -26,7 +26,8 @@ public class ThumbnailService
         {
             var cmd = FFMpegArguments
                 .FromUrlInput(new Uri(_config.RtmpHost, $"{stream.Endpoint.App}/source/{stream.User.StreamKey}?vhost=hls.zap.stream"))
-                .OutputToFile(path, true, o => { o.ForceFormat("image2").WithCustomArgument("-vframes 1"); });
+                .OutputToFile(path, true, o => { o.ForceFormat("image2").WithCustomArgument("-vframes 1"); })
+                .CancellableThrough(new CancellationTokenSource(TimeSpan.FromSeconds(10)).Token);
 
             _logger.LogInformation("Running command {cmd}", cmd.Arguments);
             await cmd.ProcessAsynchronously();
