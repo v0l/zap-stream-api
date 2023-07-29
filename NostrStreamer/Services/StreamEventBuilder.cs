@@ -37,7 +37,6 @@ public class StreamEventBuilder
             new("d", stream.Id.ToString()),
             new("title", user.Title ?? ""),
             new("summary", user.Summary ?? ""),
-            new("streaming", new Uri(_config.DataHost, $"{user.PubKey}.m3u8").ToString()),
             new("image", string.IsNullOrEmpty(user.Image) ? new Uri(_config.DataHost, $"{stream.Id}.jpg").ToString() : user.Image),
             new("status", status),
             new("p", user.PubKey, "", "host"),
@@ -48,6 +47,7 @@ public class StreamEventBuilder
         {
             var viewers = _viewCounter.Current(stream.Id);
             var starts = new DateTimeOffset(stream.Starts).ToUnixTimeSeconds();
+            tags.Add(new("streaming", new Uri(_config.DataHost, $"{user.PubKey}.m3u8").ToString()));
             tags.Add(new("starts", starts.ToString()));
             tags.Add(new("current_participants", viewers.ToString()));
 
@@ -55,6 +55,10 @@ public class StreamEventBuilder
             {
                 tags.Add(new("content-warning", user.ContentWarning));
             }
+        }
+        else if (status == "ended")
+        {
+            tags.Add(new("recording", new Uri(_config.DataHost, $"recording/{stream.Id}.m3u8").ToString()));
         }
 
         foreach (var tag in !string.IsNullOrEmpty(user.Tags) ?

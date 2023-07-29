@@ -1,7 +1,9 @@
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Nostr.Client.Json;
 using NostrStreamer.Database;
+using NostrStreamer.Services.Dvr;
 
 namespace NostrStreamer.Services.StreamManager;
 
@@ -11,21 +13,23 @@ public class NostrStreamManager : IStreamManager
     private readonly StreamManagerContext _context;
     private readonly StreamEventBuilder _eventBuilder;
     private readonly SrsApi _srsApi;
+    private readonly IDvrStore _dvrStore;
 
     public NostrStreamManager(ILogger<NostrStreamManager> logger, StreamManagerContext context,
-        StreamEventBuilder eventBuilder, SrsApi srsApi)
+        StreamEventBuilder eventBuilder, SrsApi srsApi, IDvrStore dvrStore)
     {
         _logger = logger;
         _context = context;
         _eventBuilder = eventBuilder;
         _srsApi = srsApi;
+        _dvrStore = dvrStore;
     }
 
     public UserStream GetStream()
     {
         return _context.UserStream;
     }
-    
+
     public Task<List<string>> OnForward()
     {
         if (_context.User.Balance <= 0)
@@ -130,6 +134,22 @@ public class NostrStreamManager : IStreamManager
         await _context.Db.Guests
             .Where(a => a.PubKey == pubkey && a.StreamId == _context.UserStream.Id)
             .ExecuteDeleteAsync();
+    }
+
+    public async Task OnDvr(Uri segment)
+    {
+        var matches = new Regex("\\.(\\d+)\\.[\\w]{2,4}$").Match(segment.AbsolutePath);
+
+        var result = await _dvrStore.UploadRecording(segment);
+        _context.Db.Recordings.Add(new()
+        {
+            UserStreamId = _context.UserStream.Id,
+            Url = result.Result.ToString(),
+            Duration = result.Duration,
+            Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(matches.Groups[1].Value)).UtcDateTime
+        });
+
+        await _context.Db.SaveChangesAsync();
     }
 
     public async Task UpdateViewers()

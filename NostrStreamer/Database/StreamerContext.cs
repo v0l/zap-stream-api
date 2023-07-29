@@ -27,4 +27,6 @@ public class StreamerContext : DbContext
     public DbSet<UserStreamGuest> Guests => Set<UserStreamGuest>();
 
     public DbSet<IngestEndpoint> Endpoints => Set<IngestEndpoint>();
+
+    public DbSet<UserStreamRecording> Recordings => Set<UserStreamRecording>();
 }

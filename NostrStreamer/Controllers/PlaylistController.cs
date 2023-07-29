@@ -124,7 +124,7 @@ public class PlaylistController : Controller
                 return;
             }
 
-            Response.ContentType = "application/x-mpegurl";
+            Response.ContentType = "application/vnd.apple.mpegurl";
             await using var sw = new StreamWriter(Response.Body);
 
             var streams = await _srsApi.ListStreams();
@@ -176,6 +176,39 @@ public class PlaylistController : Controller
         }
     }
 
+    [HttpGet("recording/{id:guid}.m3u8")]
+    public async Task RecordingPlaylist([FromRoute]Guid id)
+    {
+        try
+        {
+            var streamManager = await _streamManagerFactory.ForStream(id);
+            var userStream = streamManager.GetStream();
+
+            // https://developer.apple.com/documentation/http-live-streaming/video-on-demand-playlist-construction
+            Response.ContentType = "application/vnd.apple.mpegurl";
+            await using var sw = new StreamWriter(Response.Body);
+            await sw.WriteLineAsync("#EXTM3U");
+            await sw.WriteLineAsync("#EXT-X-PLAYLIST-TYPE:VOD");
+            await sw.WriteLineAsync("#EXT-X-TARGETDURATION:30");
+            await sw.WriteLineAsync("#EXT-X-VERSION:4");
+            await sw.WriteLineAsync("#EXT-X-MEDIA-SEQUENCE:0");
+            await sw.WriteLineAsync("#EXT-X-INDEPENDENT-SEGMENTS");
+
+            foreach (var seg in userStream.Recordings.OrderBy(a => a.Timestamp))
+            {
+                await sw.WriteLineAsync($"#EXTINF:{seg.Duration:0.0####},");
+                await sw.WriteLineAsync($"#EXT-X-PROGRAM-DATE-TIME:{seg.Timestamp:yyyy-MM-ddTHH:mm:ss.fffzzz}");
+                await sw.WriteLineAsync(seg.Url);
+            }
+
+            await sw.WriteLineAsync("#EXT-X-ENDLIST");
+        }
+        catch
+        {
+            Response.StatusCode = 404;
+        }
+    }
+    
     private async Task<string?> GetHlsCtx(UserStream stream)
     {
         var path = $"/{stream.Endpoint.App}/source/{stream.User.StreamKey}.m3u8";

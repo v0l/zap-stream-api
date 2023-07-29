@@ -9,11 +9,13 @@ public class SrsController : Controller
 {
     private readonly ILogger<SrsController> _logger;
     private readonly StreamManagerFactory _streamManagerFactory;
+    private readonly Config _config;
 
-    public SrsController(ILogger<SrsController> logger, StreamManagerFactory streamManager)
+    public SrsController(ILogger<SrsController> logger, StreamManagerFactory streamManager, Config config)
     {
         _logger = logger;
         _streamManagerFactory = streamManager;
+        _config = config;
     }
 
     [HttpPost]
@@ -78,6 +80,12 @@ public class SrsController : Controller
                     await streamManager.ConsumeQuota(req.Duration.Value);
                     return new();
                 }
+
+                if (req.Action == "on_dvr" && !string.IsNullOrEmpty(req.File))
+                {
+                    await streamManager.OnDvr(new Uri(_config.SrsHttpHost, $"{req.App}/{Path.GetFileName(req.File)}"));
+                    return new();
+                }
             }
             else
             {
@@ -139,4 +147,7 @@ public class SrsHook
 
     [JsonProperty("duration")]
     public double? Duration { get; init; }
+    
+    [JsonProperty("file")]
+    public string? File { get; init; }
 }

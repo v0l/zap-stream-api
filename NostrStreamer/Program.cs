@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Nostr.Client.Client;
 using NostrStreamer.Database;
 using NostrStreamer.Services;
+using NostrStreamer.Services.Dvr;
 using NostrStreamer.Services.StreamManager;
 
 namespace NostrStreamer;
@@ -58,6 +59,7 @@ internal static class Program
         services.AddTransient<UserService>();
         services.AddTransient<ThumbnailService>();
         services.AddHostedService<ThumbnailGenerator>();
+        services.AddTransient<IDvrStore, S3DvrStore>();
         
         // lnd services
         services.AddSingleton<LndNode>();

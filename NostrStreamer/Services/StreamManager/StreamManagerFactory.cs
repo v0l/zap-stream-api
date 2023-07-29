@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Nostr.Client.Json;
 using NostrStreamer.Database;
+using NostrStreamer.Services.Dvr;
 
 namespace NostrStreamer.Services.StreamManager;
 
@@ -11,14 +12,16 @@ public class StreamManagerFactory
     private readonly ILoggerFactory _loggerFactory;
     private readonly StreamEventBuilder _eventBuilder;
     private readonly SrsApi _srsApi;
+    private readonly IDvrStore _dvrStore;
 
     public StreamManagerFactory(StreamerContext db, ILoggerFactory loggerFactory, StreamEventBuilder eventBuilder,
-        SrsApi srsApi)
+        SrsApi srsApi, IDvrStore dvrStore)
     {
         _db = db;
         _loggerFactory = loggerFactory;
         _eventBuilder = eventBuilder;
         _srsApi = srsApi;
+        _dvrStore = dvrStore;
     }
 
     public async Task<IStreamManager> ForStream(Guid id)
@@ -27,6 +30,7 @@ public class StreamManagerFactory
             .AsNoTracking()
             .Include(a => a.User)
             .Include(a => a.Endpoint)
+            .Include(a => a.Recordings)
             .FirstOrDefaultAsync(a => a.Id == id);
 
         if (currentStream == default) throw new Exception("No live stream");
@@ -37,15 +41,16 @@ public class StreamManagerFactory
             UserStream = currentStream
         };
 
-        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _srsApi);
+        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _srsApi, _dvrStore);
     }
-    
+
     public async Task<IStreamManager> ForCurrentStream(string pubkey)
     {
         var currentStream = await _db.Streams
             .AsNoTracking()
             .Include(a => a.User)
             .Include(a => a.Endpoint)
+            .Include(a => a.Recordings)
             .FirstOrDefaultAsync(a => a.PubKey.Equals(pubkey) && a.State == UserStreamState.Live);
 
         if (currentStream == default) throw new Exception("No live stream");
@@ -56,7 +61,7 @@ public class StreamManagerFactory
             UserStream = currentStream
         };
 
-        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _srsApi);
+        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _srsApi, _dvrStore);
     }
 
     public async Task<IStreamManager> ForStream(StreamInfo info)
@@ -65,6 +70,7 @@ public class StreamManagerFactory
             .AsNoTracking()
             .Include(a => a.User)
             .Include(a => a.Endpoint)
+            .Include(a => a.Recordings)
             .FirstOrDefaultAsync(a =>
                 a.ClientId.Equals(info.ClientId) &&
                 a.User.StreamKey.Equals(info.StreamKey) &&
@@ -118,6 +124,6 @@ public class StreamManagerFactory
             UserStream = stream
         };
 
-        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _srsApi);
+        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _srsApi, _dvrStore);
     }
 }

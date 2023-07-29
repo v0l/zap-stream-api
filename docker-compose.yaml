@@ -1,3 +1,5 @@
+volumes:
+  minio-dvr:
 services:
   srs-origin:
     image: ossrs/srs:5
@@ -27,3 +29,15 @@ services:
       - "POSTGRES_HOST_AUTH_METHOD=trust"
     ports:
       - "5431:5432"
+  minio:
+    image: quay.io/minio/minio
+    command:
+      - "server"
+      - "/data" 
+      - "--console-address"
+      - ":9001"
+    ports:
+      - "9010:9000"
+      - "9011:9001"
+    volumes:
+      - "minio-dvr:/data"

@@ -1,3 +1,6 @@
+using Amazon;
+using Amazon.Runtime;
+using Amazon.S3;
 using Newtonsoft.Json;
 using Nostr.Client.Json;
 using Nostr.Client.Keys;
@@ -28,6 +31,18 @@ public static class Extensions
         return ep.Capabilities
             .Where(a => a.StartsWith("variant"))
             .Select(Variant.FromString).ToList();
+    }
+    
+    public static AmazonS3Client CreateClient(this S3BlobConfig c)
+    {
+        return new AmazonS3Client(new BasicAWSCredentials(c.AccessKey, c.SecretKey),
+            new AmazonS3Config
+            {
+                RegionEndpoint = !string.IsNullOrEmpty(c.Region) ? RegionEndpoint.GetBySystemName(c.Region) : null,
+                ServiceURL = c.ServiceUrl.ToString(),
+                UseHttp = c.ServiceUrl.Scheme == "http",
+                ForcePathStyle = true
+            });
     }
 }
 

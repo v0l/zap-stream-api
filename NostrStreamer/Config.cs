@@ -36,6 +36,8 @@ public class Config
     public string[] Relays { get; init; } = Array.Empty<string>();
 
     public LndConfig Lnd { get; init; } = null!;
+
+    public S3BlobConfig DvrStore { get; init; } = null!;
 }
 
 public class LndConfig
@@ -45,4 +47,15 @@ public class LndConfig
     public string CertPath { get; init; } = null!;
 
     public string MacaroonPath { get; init; } = null!;
+}
+
+public sealed class S3BlobConfig
+{
+    public string Name { get; init; } = null!;
+    public string AccessKey { get; init; } = null!;
+    public string SecretKey { get; init; } = null!;
+    public Uri ServiceUrl { get; init; } = null!;
+    public string? Region { get; init; }
+    public string BucketName { get; init; } = "zap-stream-dvr";
+    public bool DisablePayloadSigning { get; init; }
 }

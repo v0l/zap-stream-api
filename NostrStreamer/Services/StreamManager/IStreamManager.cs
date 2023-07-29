@@ -66,4 +66,11 @@ public interface IStreamManager
     /// <param name="pubkey"></param>
     /// <returns></returns>
     Task RemoveGuest(string pubkey);
+
+    /// <summary>
+    /// When a new DVR segment is available
+    /// </summary>
+    /// <param name="segment"></param>
+    /// <returns></returns>
+    Task OnDvr(Uri segment);
 }
