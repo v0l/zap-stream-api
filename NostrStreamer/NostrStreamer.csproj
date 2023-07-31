@@ -38,6 +38,7 @@
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
       <PackageReference Include="LNURL" Version="0.0.30" />
+      <PackageReference Include="MediaFormatLibrary.Lib" Version="1.0.0" />
       <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.19" />
       <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.8" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.8">

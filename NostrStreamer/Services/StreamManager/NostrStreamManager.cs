@@ -138,7 +138,7 @@ public class NostrStreamManager : IStreamManager
 
     public async Task OnDvr(Uri segment)
     {
-        var matches = new Regex("\\.(\\d+)\\.[\\w]{2,4}$").Match(segment.AbsolutePath);
+        //var matches = new Regex("\\.(\\d+)\\.[\\w]{2,4}$").Match(segment.AbsolutePath);
 
         var result = await _dvrStore.UploadRecording(segment);
         _context.Db.Recordings.Add(new()
@@ -146,7 +146,7 @@ public class NostrStreamManager : IStreamManager
             UserStreamId = _context.UserStream.Id,
             Url = result.Result.ToString(),
             Duration = result.Duration,
-            Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(matches.Groups[1].Value)).UtcDateTime
+            Timestamp = DateTime.UtcNow //DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(matches.Groups[1].Value)).UtcDateTime
         });
 
         await _context.Db.SaveChangesAsync();

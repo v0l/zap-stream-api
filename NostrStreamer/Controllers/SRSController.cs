@@ -75,17 +75,18 @@ public class SrsController : Controller
                     return new();
                 }
 
-                if (req.Action == "on_hls" && req.Duration.HasValue && !string.IsNullOrEmpty(req.ClientId))
+                if (req.Action == "on_hls" && req.Duration.HasValue && !string.IsNullOrEmpty(req.ClientId) && !string.IsNullOrEmpty(req.File))
                 {
                     await streamManager.ConsumeQuota(req.Duration.Value);
-                    return new();
-                }
-
-                if (req.Action == "on_dvr" && !string.IsNullOrEmpty(req.File))
-                {
                     await streamManager.OnDvr(new Uri(_config.SrsHttpHost, $"{req.App}/{Path.GetFileName(req.File)}"));
                     return new();
                 }
+
+                /*if (req.Action == "on_dvr" && !string.IsNullOrEmpty(req.File))
+                {
+                    await streamManager.OnDvr(new Uri(_config.SrsHttpHost, $"{req.App}/{Path.GetFileName(req.File)}"));
+                    return new();
+                }*/
             }
             else
             {

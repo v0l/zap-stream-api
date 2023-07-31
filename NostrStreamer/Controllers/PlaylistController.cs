@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using MediaFormatLibrary.MP4;
 using Microsoft.AspNetCore.Mvc;
 using NostrStreamer.Database;
 using NostrStreamer.Services;
@@ -18,7 +19,8 @@ public class PlaylistController : Controller
     private readonly ThumbnailService _thumbnailService;
 
     public PlaylistController(Config config, ILogger<PlaylistController> logger,
-        HttpClient client, SrsApi srsApi, ViewCounter viewCounter, StreamManagerFactory streamManagerFactory, ThumbnailService thumbnailService)
+        HttpClient client, SrsApi srsApi, ViewCounter viewCounter, StreamManagerFactory streamManagerFactory,
+        ThumbnailService thumbnailService)
     {
         _config = config;
         _logger = logger;
@@ -177,7 +179,7 @@ public class PlaylistController : Controller
     }
 
     [HttpGet("recording/{id:guid}.m3u8")]
-    public async Task RecordingPlaylist([FromRoute]Guid id)
+    public async Task RecordingPlaylist([FromRoute] Guid id)
     {
         try
         {
@@ -189,14 +191,14 @@ public class PlaylistController : Controller
             await using var sw = new StreamWriter(Response.Body);
             await sw.WriteLineAsync("#EXTM3U");
             await sw.WriteLineAsync("#EXT-X-PLAYLIST-TYPE:VOD");
-            await sw.WriteLineAsync("#EXT-X-TARGETDURATION:30");
-            await sw.WriteLineAsync("#EXT-X-VERSION:4");
+            await sw.WriteLineAsync("#EXT-X-TARGETDURATION:4");
+            await sw.WriteLineAsync("#EXT-X-VERSION:6");
             await sw.WriteLineAsync("#EXT-X-MEDIA-SEQUENCE:0");
-            await sw.WriteLineAsync("#EXT-X-INDEPENDENT-SEGMENTS");
+            //await sw.WriteLineAsync($"#EXT-X-MAP:URI=\"{id}_init.mp4\"");
 
             foreach (var seg in userStream.Recordings.OrderBy(a => a.Timestamp))
             {
-                await sw.WriteLineAsync($"#EXTINF:{seg.Duration:0.0####},");
+                await sw.WriteLineAsync($"#EXTINF:{seg.Duration},");
                 await sw.WriteLineAsync($"#EXT-X-PROGRAM-DATE-TIME:{seg.Timestamp:yyyy-MM-ddTHH:mm:ss.fffzzz}");
                 await sw.WriteLineAsync(seg.Url);
             }
@@ -208,7 +210,38 @@ public class PlaylistController : Controller
             Response.StatusCode = 404;
         }
     }
-    
+
+    [HttpGet("recording/{id:guid}_init.mp4")]
+    public async Task GenerateInitTrack([FromRoute] Guid id)
+    {
+        try
+        {
+            var streamManager = await _streamManagerFactory.ForStream(id);
+            var userStream = streamManager.GetStream();
+
+            var firstFrag = await _client.GetStreamAsync(userStream.Recordings.First().Url);
+            var tmpFrag = Path.GetTempFileName();
+            await firstFrag.CopyToAsync(new FileStream(tmpFrag, FileMode.Open, FileAccess.ReadWrite));
+
+            var frag = MP4Stream.Open(tmpFrag, FileMode.Open, FileAccess.Read);
+            var boxes = frag.ReadRootBoxes();
+            
+            Response.ContentType = "video/mp4";
+            using var outStream = new MemoryStream();
+            foreach (var box in boxes.Take(2))
+            {
+                box.WriteBytes(outStream);
+            }
+
+            outStream.Seek(0, SeekOrigin.Begin);
+            await outStream.CopyToAsync(Response.Body);
+        }
+        catch
+        {
+            Response.StatusCode = 404;
+        }
+    }
+
     private async Task<string?> GetHlsCtx(UserStream stream)
     {
         var path = $"/{stream.Endpoint.App}/source/{stream.User.StreamKey}.m3u8";
