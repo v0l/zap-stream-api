@@ -61,6 +61,12 @@ public class SrsController : Controller
                 };
             }
 
+            if (req.App.EndsWith("720h") && req.Action == "on_hls" && !string.IsNullOrEmpty(req.File))
+            {
+                await streamManager.OnDvr(new Uri(_config.SrsHttpHost, $"{req.App}/{Path.GetFileName(req.File)}"));
+                return new();
+            }
+
             if (req.App.EndsWith("/source"))
             {
                 if (req.Action == "on_publish")
@@ -75,11 +81,9 @@ public class SrsController : Controller
                     return new();
                 }
 
-                if (req.Action == "on_hls" && req.Duration.HasValue && !string.IsNullOrEmpty(req.ClientId) && !string.IsNullOrEmpty(req.File))
+                if (req.Action == "on_hls" && req.Duration.HasValue && !string.IsNullOrEmpty(req.ClientId))
                 {
                     await streamManager.ConsumeQuota(req.Duration.Value);
-                    await streamManager.OnDvr(new Uri(_config.SrsHttpHost, $"{req.App}/{Path.GetFileName(req.File)}"));
-                    return new();
                 }
 
                 /*if (req.Action == "on_dvr" && !string.IsNullOrEmpty(req.File))
@@ -148,7 +152,7 @@ public class SrsHook
 
     [JsonProperty("duration")]
     public double? Duration { get; init; }
-    
+
     [JsonProperty("file")]
     public string? File { get; init; }
 }
