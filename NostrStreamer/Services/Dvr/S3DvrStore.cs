@@ -74,11 +74,17 @@ public class S3DvrStore : IDvrStore
             Expires = new DateTime(3000, 1, 1)
         });
 
+        var ub = new UriBuilder(url)
+        {
+            Scheme = _config.PublicHost.Scheme,
+            Host = _config.PublicHost.Host
+        };
+
         var tsUpload = sw.Elapsed;
 
         _logger.LogInformation("download={tc:#,##0}ms, probe={pc:#,##0}ms, upload={uc:#,##0}ms", tsDownload.TotalMilliseconds,
             tsProbe.TotalMilliseconds, tsUpload.TotalMilliseconds);
 
-        return new(new Uri(url), probe.Duration.TotalSeconds);
+        return new(ub.Uri, probe.Duration.TotalSeconds);
     }
 }

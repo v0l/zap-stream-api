@@ -39,7 +39,8 @@ public class SrsController : Controller
                 Variant = appSplit.Length > 1 ? appSplit[1] : "",
                 ClientId = req.ClientId!,
                 StreamId = req.StreamId ?? req.ClientId!,
-                StreamKey = req.Stream
+                StreamKey = req.Stream,
+                EdgeIp = req.Ip!
             });
 
             if (req.Action == "on_forward")
