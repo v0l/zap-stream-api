@@ -36,6 +36,8 @@ services:
       - "/data" 
       - "--console-address"
       - ":9001"
+    environment:
+      - "MINIO_SERVER_URL=http://localhost:9010"
     ports:
       - "9010:9000"
       - "9011:9001"
