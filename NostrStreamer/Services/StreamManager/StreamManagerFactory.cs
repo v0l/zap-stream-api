@@ -72,7 +72,7 @@ public class StreamManagerFactory
             .Include(a => a.Endpoint)
             .Include(a => a.Recordings)
             .FirstOrDefaultAsync(a =>
-                a.ClientId.Equals(info.ClientId) &&
+                a.StreamId.Equals(info.StreamId) &&
                 a.User.StreamKey.Equals(info.StreamKey) &&
                 a.Endpoint.App.Equals(info.App));
 
@@ -97,7 +97,7 @@ public class StreamManagerFactory
                 {
                     EndpointId = ep.Id,
                     PubKey = user.PubKey,
-                    ClientId = info.ClientId,
+                    StreamId = info.StreamId,
                     State = UserStreamState.Planned
                 };
 
@@ -113,7 +113,7 @@ public class StreamManagerFactory
                 Id = stream?.Id ?? Guid.NewGuid(),
                 User = user,
                 Endpoint = ep,
-                ClientId = info.ClientId,
+                StreamId = info.StreamId,
                 State = UserStreamState.Planned,
             };
         }
@@ -121,7 +121,8 @@ public class StreamManagerFactory
         var ctx = new StreamManagerContext
         {
             Db = _db,
-            UserStream = stream
+            UserStream = stream,
+            StreamInfo = info
         };
 
         return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _srsApi, _dvrStore);

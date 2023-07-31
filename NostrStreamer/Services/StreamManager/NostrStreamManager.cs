@@ -87,7 +87,7 @@ public class NostrStreamManager : IStreamManager
         if (_context.User.Balance <= 0)
         {
             _logger.LogInformation("Kicking stream due to low balance");
-            await _srsApi.KickClient(_context.UserStream.ClientId);
+            await _srsApi.KickClient(_context.StreamInfo.ClientId);
         }
     }
 
@@ -140,7 +140,7 @@ public class NostrStreamManager : IStreamManager
     {
         //var matches = new Regex("\\.(\\d+)\\.[\\w]{2,4}$").Match(segment.AbsolutePath);
 
-        var result = await _dvrStore.UploadRecording(segment);
+        var result = await _dvrStore.UploadRecording(_context.UserStream, segment);
         _context.Db.Recordings.Add(new()
         {
             UserStreamId = _context.UserStream.Id,

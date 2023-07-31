@@ -7,4 +7,5 @@ public class StreamManagerContext
     public StreamerContext Db { get; init; } = null!;
     public UserStream UserStream { get; init; } = null!;
     public User User => UserStream.User;
+    public StreamInfo? StreamInfo { get; init; }
 }

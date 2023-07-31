@@ -38,6 +38,7 @@ public class SrsController : Controller
                 App = appSplit[0],
                 Variant = appSplit.Length > 1 ? appSplit[1] : "",
                 ClientId = req.ClientId!,
+                StreamId = req.StreamId!,
                 StreamKey = req.Stream
             });
 
@@ -61,12 +62,6 @@ public class SrsController : Controller
                 };
             }
 
-            if (req.App.EndsWith("720h") && req.Action == "on_hls" && !string.IsNullOrEmpty(req.File))
-            {
-                await streamManager.OnDvr(new Uri(_config.SrsHttpHost, $"{req.App}/{Path.GetFileName(req.File)}"));
-                return new();
-            }
-
             if (req.App.EndsWith("/source"))
             {
                 if (req.Action == "on_publish")
@@ -84,6 +79,8 @@ public class SrsController : Controller
                 if (req.Action == "on_hls" && req.Duration.HasValue && !string.IsNullOrEmpty(req.ClientId))
                 {
                     await streamManager.ConsumeQuota(req.Duration.Value);
+                    await streamManager.OnDvr(new Uri(_config.SrsHttpHost, $"{req.App}/{Path.GetFileName(req.File)}"));
+                    return new();
                 }
 
                 /*if (req.Action == "on_dvr" && !string.IsNullOrEmpty(req.File))
@@ -134,6 +131,9 @@ public class SrsHook
 
     [JsonProperty("client_id")]
     public string? ClientId { get; set; }
+    
+    [JsonProperty("stream_id")]
+    public string? StreamId { get; set; }
 
     [JsonProperty("ip")]
     public string? Ip { get; set; }

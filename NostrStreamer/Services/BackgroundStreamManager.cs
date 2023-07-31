@@ -36,7 +36,7 @@ public class BackgroundStreamManager : BackgroundService
                 foreach (var id in liveStreams)
                 {
                     var manager = await streamManager.ForStream(id);
-                    var client = await srs.GetClient(manager.GetStream().ClientId);
+                    var client = await srs.GetStream(manager.GetStream().StreamId);
                     if (client != default)
                     {
                         await manager.UpdateViewers();

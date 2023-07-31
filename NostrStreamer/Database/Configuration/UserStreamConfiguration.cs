@@ -8,7 +8,7 @@ public class UserStreamConfiguration : IEntityTypeConfiguration<UserStream>
     public void Configure(EntityTypeBuilder<UserStream> builder)
     {
         builder.HasKey(a => a.Id);
-        builder.Property(a => a.ClientId)
+        builder.Property(a => a.StreamId)
             .IsRequired();
 
         builder.Property(a => a.Starts)

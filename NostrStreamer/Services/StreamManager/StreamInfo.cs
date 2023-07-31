@@ -9,4 +9,6 @@ public class StreamInfo
     public string StreamKey { get; init; } = null!;
 
     public string ClientId { get; init; } = null!;
+
+    public string StreamId { get; init; } = null!;
 }

@@ -7,7 +7,7 @@ public class UserStream
     public string PubKey { get; init; } = null!;
     public User User { get; init; } = null!;
 
-    public string ClientId { get; init; } = null!;
+    public string StreamId { get; init; } = null!;
     
     public DateTime Starts { get; init; } = DateTime.UtcNow;
     
