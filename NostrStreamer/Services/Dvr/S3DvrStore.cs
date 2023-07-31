@@ -77,7 +77,8 @@ public class S3DvrStore : IDvrStore
         var ub = new UriBuilder(url)
         {
             Scheme = _config.PublicHost.Scheme,
-            Host = _config.PublicHost.Host
+            Host = _config.PublicHost.Host,
+            Port = _config.PublicHost.Port
         };
 
         var tsUpload = sw.Elapsed;
