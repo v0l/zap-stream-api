@@ -38,7 +38,7 @@ public class SrsController : Controller
                 App = appSplit[0],
                 Variant = appSplit.Length > 1 ? appSplit[1] : "",
                 ClientId = req.ClientId!,
-                StreamId = req.StreamId!,
+                StreamId = req.StreamId ?? req.ClientId!,
                 StreamKey = req.Stream
             });
 

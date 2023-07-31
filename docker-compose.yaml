@@ -11,7 +11,7 @@ services:
       - "9003:8080"
       - "9004:8000"
   srs-edge:
-    image: ossrs/srs:5
+    image: ossrs/srs:4
     volumes:
       - "./docker/srs-edge.conf:/usr/local/srs/conf/srs.conf"
     ports:
