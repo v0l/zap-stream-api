@@ -112,13 +112,30 @@ public class PlaylistController : Controller
     }
 
     [HttpGet("{pubkey}.m3u8")]
-    public async Task CreateMultiBitrate([FromRoute] string pubkey)
+    public async Task<IActionResult> GetCurrentStreamRedirect([FromRoute] string pubkey)
     {
         try
         {
             var streamManager = await _streamManagerFactory.ForCurrentStream(pubkey);
-
             var userStream = streamManager.GetStream();
+            return Redirect($"{userStream.Id}.m3u8");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Failed to get stream for {pubkey} {message}", pubkey, ex.Message);
+        }
+
+        return NotFound();
+    }
+
+    [HttpGet("{id:guid}.m3u8")]
+    public async Task CreateMultiBitrate([FromRoute] Guid id)
+    {
+        try
+        {
+            var streamManager = await _streamManagerFactory.ForStream(id);
+            var userStream = streamManager.GetStream();
+
             var hlsCtx = await GetHlsCtx(userStream);
             if (string.IsNullOrEmpty(hlsCtx))
             {
@@ -156,7 +173,7 @@ public class PlaylistController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("Failed to get stream for {pubkey} {message}", pubkey, ex.Message);
+            _logger.LogWarning("Failed to get stream for {id} {message}", id, ex.Message);
             Response.StatusCode = 404;
         }
     }
@@ -191,7 +208,7 @@ public class PlaylistController : Controller
                 Response.StatusCode = 404;
                 return;
             }
-            
+
             // https://developer.apple.com/documentation/http-live-streaming/video-on-demand-playlist-construction
             Response.ContentType = "application/vnd.apple.mpegurl";
             await using var sw = new StreamWriter(Response.Body);
@@ -231,7 +248,7 @@ public class PlaylistController : Controller
 
             var frag = MP4Stream.Open(tmpFrag, FileMode.Open, FileAccess.Read);
             var boxes = frag.ReadRootBoxes();
-            
+
             Response.ContentType = "video/mp4";
             using var outStream = new MemoryStream();
             foreach (var box in boxes.Take(2))
