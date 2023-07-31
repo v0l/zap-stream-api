@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Amazon.S3;
 using Amazon.S3.Model;
 using FFMpegCore;
+using NostrStreamer.Database;
 
 namespace NostrStreamer.Services.Dvr;
 
@@ -20,7 +21,7 @@ public class S3DvrStore : IDvrStore
         _client = config.DvrStore.CreateClient();
     }
 
-    public async Task<UploadResult> UploadRecording(Uri source)
+    public async Task<UploadResult> UploadRecording(UserStream stream, Uri source)
     {
         var sw = Stopwatch.StartNew();
 
@@ -54,7 +55,7 @@ public class S3DvrStore : IDvrStore
 
         sw.Restart();
         var ext = Path.GetExtension(source.AbsolutePath);
-        var key = $"{recordingId}{ext}";
+        var key = $"{stream.Id}/{recordingId}{ext}";
         await _client.PutObjectAsync(new PutObjectRequest
         {
             BucketName = _config.BucketName,
