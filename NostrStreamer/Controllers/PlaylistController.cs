@@ -186,6 +186,12 @@ public class PlaylistController : Controller
             var streamManager = await _streamManagerFactory.ForStream(id);
             var userStream = streamManager.GetStream();
 
+            if (userStream.Recordings.Count == 0)
+            {
+                Response.StatusCode = 404;
+                return;
+            }
+            
             // https://developer.apple.com/documentation/http-live-streaming/video-on-demand-playlist-construction
             Response.ContentType = "application/vnd.apple.mpegurl";
             await using var sw = new StreamWriter(Response.Body);
