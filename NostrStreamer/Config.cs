@@ -58,5 +58,4 @@ public sealed class S3BlobConfig
     public string? Region { get; init; }
     public string BucketName { get; init; } = "zap-stream-dvr";
     public bool DisablePayloadSigning { get; init; }
-    public Uri PublicHost { get; init; } = null!;
 }
