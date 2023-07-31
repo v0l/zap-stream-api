@@ -75,14 +75,11 @@ public class S3DvrStore : IDvrStore
 
         var tsUpload = sw.Elapsed;
 
-        var ret = new UriBuilder(url)
-        {
-            Scheme = _config.ServiceUrl.Scheme
-        };
+        var ret = new Uri(_config.PublicHost, new Uri(url).AbsolutePath);
 
         _logger.LogInformation("download={tc:#,##0}ms, probe={pc:#,##0}ms, upload={uc:#,##0}ms", tsDownload.TotalMilliseconds,
             tsProbe.TotalMilliseconds, tsUpload.TotalMilliseconds);
 
-        return new(ret.Uri, probe.Duration.TotalSeconds);
+        return new(ret, probe.Duration.TotalSeconds);
     }
 }
