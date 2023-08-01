@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using FFMpegCore;
 using NostrStreamer.Database;
 
@@ -24,6 +25,7 @@ public class ThumbnailService
         var path = MapPath(stream.Id);
         try
         {
+            var sw = Stopwatch.StartNew();
             var cmd = FFMpegArguments
                 .FromUrlInput(new Uri(_config.RtmpHost, $"{stream.Endpoint.App}/source/{stream.User.StreamKey}?vhost=hls.zap.stream"))
                 .OutputToFile(path, true, o => { o.ForceFormat("image2").WithCustomArgument("-vframes 1"); })
@@ -31,10 +33,12 @@ public class ThumbnailService
 
             _logger.LogInformation("Running command {cmd}", cmd.Arguments);
             await cmd.ProcessAsynchronously();
+            sw.Stop();
+            _logger.LogInformation("Generated {id} thumb in {n:#,##0}ms", stream.Id, sw.Elapsed.TotalMilliseconds);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("Failed to generate thumbnail {msg}", ex.Message);
+            _logger.LogWarning("Failed to generate {id} thumbnail {msg}", stream.Id, ex.Message);
         }
     }
 

@@ -27,6 +27,16 @@ public class UserStream
 
     public Guid EndpointId { get; init; }
     public IngestEndpoint Endpoint { get; init; } = null!;
+
+    /// <summary>
+    /// Publisher edge IP
+    /// </summary>
+    public string EdgeIp { get; set; } = null!;
+    
+    /// <summary>
+    /// Publisher edge client id
+    /// </summary>
+    public string ForwardClientId { get; set; } = null!;
     
     public List<UserStreamGuest> Guests { get; init; } = new();
     public List<UserStreamRecording> Recordings { get; init; } = new();

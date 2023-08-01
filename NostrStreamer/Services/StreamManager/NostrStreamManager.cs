@@ -12,16 +12,14 @@ public class NostrStreamManager : IStreamManager
     private readonly ILogger<NostrStreamManager> _logger;
     private readonly StreamManagerContext _context;
     private readonly StreamEventBuilder _eventBuilder;
-    private readonly SrsApi _srsApi;
     private readonly IDvrStore _dvrStore;
 
     public NostrStreamManager(ILogger<NostrStreamManager> logger, StreamManagerContext context,
-        StreamEventBuilder eventBuilder, SrsApi srsApi, IDvrStore dvrStore)
+        StreamEventBuilder eventBuilder, IDvrStore dvrStore)
     {
         _logger = logger;
         _context = context;
         _eventBuilder = eventBuilder;
-        _srsApi = srsApi;
         _dvrStore = dvrStore;
     }
 
@@ -87,7 +85,7 @@ public class NostrStreamManager : IStreamManager
         if (_context.User.Balance <= 0)
         {
             _logger.LogInformation("Kicking stream due to low balance");
-            await _srsApi.KickClient(_context.StreamInfo.ClientId);
+            await _context.EdgeApi.KickClient(_context.UserStream.ForwardClientId);
         }
     }
 
@@ -150,6 +148,11 @@ public class NostrStreamManager : IStreamManager
         });
 
         await _context.Db.SaveChangesAsync();
+    }
+    
+    public async Task UpdateEvent()
+    {
+        await UpdateStreamState(_context.UserStream.State);
     }
 
     public async Task UpdateViewers()

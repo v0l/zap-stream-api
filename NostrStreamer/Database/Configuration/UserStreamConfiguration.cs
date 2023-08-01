@@ -24,6 +24,12 @@ public class UserStreamConfiguration : IEntityTypeConfiguration<UserStream>
 
         builder.Property(a => a.Recording);
 
+        builder.Property(a => a.EdgeIp)
+            .IsRequired();
+
+        builder.Property(a => a.ForwardClientId)
+            .IsRequired();
+
         builder.HasOne(a => a.Endpoint)
             .WithMany()
             .HasForeignKey(a => a.EndpointId);

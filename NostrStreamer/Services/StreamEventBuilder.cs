@@ -47,7 +47,7 @@ public class StreamEventBuilder
         {
             var viewers = _viewCounter.Current(stream.Id);
             var starts = new DateTimeOffset(stream.Starts).ToUnixTimeSeconds();
-            tags.Add(new("streaming", new Uri(_config.DataHost, $"{stream.Id}.m3u8").ToString()));
+            tags.Add(new("streaming", new Uri(_config.DataHost, $"stream/{stream.Id}.m3u8").ToString()));
             tags.Add(new("starts", starts.ToString()));
             tags.Add(new("current_participants", viewers.ToString()));
 

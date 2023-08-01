@@ -8,4 +8,5 @@ public class StreamManagerContext
     public UserStream UserStream { get; init; } = null!;
     public User User => UserStream.User;
     public StreamInfo? StreamInfo { get; init; }
+    public SrsApi EdgeApi { get; init; } = null!;
 }

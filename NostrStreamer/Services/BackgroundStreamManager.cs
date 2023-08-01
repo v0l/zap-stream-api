@@ -27,9 +27,10 @@ public class BackgroundStreamManager : BackgroundService
                 var db = scope.ServiceProvider.GetRequiredService<StreamerContext>();
                 var srs = scope.ServiceProvider.GetRequiredService<SrsApi>();
 
+                var recentlyEnded = DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(5));
                 var liveStreams = await db.Streams
                     .AsNoTracking()
-                    .Where(a => a.State == UserStreamState.Live)
+                    .Where(a => a.State == UserStreamState.Live || a.Ends > recentlyEnded)
                     .Select(a => a.Id)
                     .ToListAsync(cancellationToken: stoppingToken);
 

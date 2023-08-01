@@ -118,7 +118,7 @@ public class PlaylistController : Controller
         {
             var streamManager = await _streamManagerFactory.ForCurrentStream(pubkey);
             var userStream = streamManager.GetStream();
-            return Redirect($"{userStream.Id}.m3u8");
+            return Redirect($"stream/{userStream.Id}.m3u8");
         }
         catch (Exception ex)
         {
@@ -128,7 +128,7 @@ public class PlaylistController : Controller
         return NotFound();
     }
 
-    [HttpGet("{id:guid}.m3u8")]
+    [HttpGet("stream/{id:guid}.m3u8")]
     public async Task CreateMultiBitrate([FromRoute] Guid id)
     {
         try

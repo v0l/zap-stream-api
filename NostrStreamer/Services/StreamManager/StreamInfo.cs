@@ -10,7 +10,5 @@ public class StreamInfo
 
     public string ClientId { get; init; } = null!;
 
-    public string StreamId { get; init; } = null!;
-
     public string EdgeIp { get; init; } = null!;
 }

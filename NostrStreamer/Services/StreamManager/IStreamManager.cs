@@ -73,4 +73,10 @@ public interface IStreamManager
     /// <param name="segment"></param>
     /// <returns></returns>
     Task OnDvr(Uri segment);
+    
+    /// <summary>
+    /// Republish stream event
+    /// </summary>
+    /// <returns></returns>
+    public Task UpdateEvent();
 }

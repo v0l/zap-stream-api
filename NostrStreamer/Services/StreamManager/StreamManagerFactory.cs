@@ -11,57 +11,118 @@ public class StreamManagerFactory
     private readonly StreamerContext _db;
     private readonly ILoggerFactory _loggerFactory;
     private readonly StreamEventBuilder _eventBuilder;
-    private readonly SrsApi _srsApi;
+    private readonly IServiceProvider _serviceProvider;
     private readonly IDvrStore _dvrStore;
 
     public StreamManagerFactory(StreamerContext db, ILoggerFactory loggerFactory, StreamEventBuilder eventBuilder,
-        SrsApi srsApi, IDvrStore dvrStore)
+        IServiceProvider serviceProvider, IDvrStore dvrStore)
     {
         _db = db;
         _loggerFactory = loggerFactory;
         _eventBuilder = eventBuilder;
-        _srsApi = srsApi;
+        _serviceProvider = serviceProvider;
         _dvrStore = dvrStore;
+    }
+
+    public async Task<IStreamManager> CreateStream(StreamInfo info)
+    {
+        var user = await _db.Users
+            .AsNoTracking()
+            .SingleOrDefaultAsync(a => a.StreamKey.Equals(info.StreamKey));
+
+        if (user == default) throw new Exception("No user found");
+
+        var ep = await _db.Endpoints
+            .AsNoTracking()
+            .SingleOrDefaultAsync(a => a.App.Equals(info.App));
+
+        if (ep == default) throw new Exception("No endpoint found");
+
+        if (await _db.Streams.CountAsync(a => a.State == UserStreamState.Live && a.PubKey == user.PubKey) != 0)
+        {
+            throw new Exception("Cannot start a new stream when already live");
+        }
+
+        if (user.Balance <= 0)
+        {
+            throw new Exception("Cannot start stream with empty balance");
+        }
+
+        var stream = new UserStream
+        {
+            EndpointId = ep.Id,
+            PubKey = user.PubKey,
+            StreamId = "",
+            State = UserStreamState.Live,
+            EdgeIp = info.EdgeIp,
+            ForwardClientId = info.ClientId
+        };
+
+        var ev = _eventBuilder.CreateStreamEvent(user, stream);
+        stream.Event = JsonConvert.SerializeObject(ev, NostrSerializer.Settings);
+        _db.Streams.Add(stream);
+        await _db.SaveChangesAsync();
+
+        var ctx = new StreamManagerContext
+        {
+            Db = _db,
+            UserStream = new()
+            {
+                Id = stream.Id,
+                PubKey = stream.PubKey,
+                StreamId = stream.StreamId,
+                State = stream.State,
+                EdgeIp = stream.EdgeIp,
+                ForwardClientId = stream.ForwardClientId,
+                Endpoint = ep,
+                User = user
+            },
+            EdgeApi = new SrsApi(_serviceProvider.GetRequiredService<HttpClient>(), new Uri($"http://{stream.EdgeIp}:1985"))
+        };
+
+        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _dvrStore);
     }
 
     public async Task<IStreamManager> ForStream(Guid id)
     {
-        var currentStream = await _db.Streams
+        var stream = await _db.Streams
             .AsNoTracking()
             .Include(a => a.User)
             .Include(a => a.Endpoint)
             .Include(a => a.Recordings)
             .FirstOrDefaultAsync(a => a.Id == id);
 
-        if (currentStream == default) throw new Exception("No live stream");
+        if (stream == default) throw new Exception("No live stream");
 
         var ctx = new StreamManagerContext
         {
             Db = _db,
-            UserStream = currentStream
+            UserStream = stream,
+            EdgeApi = new SrsApi(_serviceProvider.GetRequiredService<HttpClient>(), new Uri($"http://{stream.EdgeIp}:1985"))
         };
 
-        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _srsApi, _dvrStore);
+        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _dvrStore);
     }
 
     public async Task<IStreamManager> ForCurrentStream(string pubkey)
     {
-        var currentStream = await _db.Streams
+        var stream = await _db.Streams
             .AsNoTracking()
             .Include(a => a.User)
             .Include(a => a.Endpoint)
             .Include(a => a.Recordings)
             .FirstOrDefaultAsync(a => a.PubKey.Equals(pubkey) && a.State == UserStreamState.Live);
 
-        if (currentStream == default) throw new Exception("No live stream");
+        if (stream == default) throw new Exception("No live stream");
 
         var ctx = new StreamManagerContext
         {
             Db = _db,
-            UserStream = currentStream
+            UserStream = stream,
+            EdgeApi = new SrsApi(_serviceProvider.GetRequiredService<HttpClient>(), new Uri($"http://{stream.EdgeIp}:1985"))
         };
 
-        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _srsApi, _dvrStore);
+        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _dvrStore);
     }
 
     public async Task<IStreamManager> ForStream(StreamInfo info)
@@ -71,60 +132,25 @@ public class StreamManagerFactory
             .Include(a => a.User)
             .Include(a => a.Endpoint)
             .Include(a => a.Recordings)
+            .OrderByDescending(a => a.Starts)
             .FirstOrDefaultAsync(a =>
-                a.StreamId.Equals(info.StreamId) &&
                 a.User.StreamKey.Equals(info.StreamKey) &&
-                a.Endpoint.App.Equals(info.App));
+                a.Endpoint.App.Equals(info.App) &&
+                a.State == UserStreamState.Live);
 
         if (stream == default)
         {
-            var user = await _db.Users
-                .AsNoTracking()
-                .SingleOrDefaultAsync(a => a.StreamKey.Equals(info.StreamKey));
-
-            if (user == default) throw new Exception("No user found");
-
-            var ep = await _db.Endpoints
-                .AsNoTracking()
-                .SingleOrDefaultAsync(a => a.App.Equals(info.App));
-
-            if (ep == default) throw new Exception("No endpoint found");
-
-            // create new stream entry for source only
-            if (info.Variant == "source")
-            {
-                stream = new()
-                {
-                    EndpointId = ep.Id,
-                    PubKey = user.PubKey,
-                    StreamId = info.StreamId,
-                    State = UserStreamState.Planned
-                };
-
-                var ev = _eventBuilder.CreateStreamEvent(user, stream);
-                stream.Event = JsonConvert.SerializeObject(ev, NostrSerializer.Settings);
-                _db.Streams.Add(stream);
-                await _db.SaveChangesAsync();
-            }
-
-            // replace again with new values
-            stream = new()
-            {
-                Id = stream?.Id ?? Guid.NewGuid(),
-                User = user,
-                Endpoint = ep,
-                StreamId = info.StreamId,
-                State = UserStreamState.Planned,
-            };
+            throw new Exception("No stream found");
         }
 
         var ctx = new StreamManagerContext
         {
             Db = _db,
             UserStream = stream,
-            StreamInfo = info
+            StreamInfo = info,
+            EdgeApi = new SrsApi(_serviceProvider.GetRequiredService<HttpClient>(), new Uri($"http://{stream.EdgeIp}:1985"))
         };
 
-        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _srsApi, _dvrStore);
+        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _dvrStore);
     }
 }

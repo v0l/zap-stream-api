@@ -10,6 +10,14 @@ public class SrsApi
     {
         _client = client;
         _client.BaseAddress = config.SrsApiHost;
+        _client.Timeout = TimeSpan.FromSeconds(5);
+    }
+    
+    public SrsApi(HttpClient client, Uri baseAddress)
+    {
+        _client = client;
+        _client.BaseAddress = baseAddress;
+        _client.Timeout = TimeSpan.FromSeconds(5);
     }
 
     public async Task<List<Stream>> ListStreams()

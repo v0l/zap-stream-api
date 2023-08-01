@@ -33,19 +33,19 @@ public class SrsController : Controller
             }
 
             var appSplit = req.App.Split("/");
-            var streamManager = await _streamManagerFactory.ForStream(new StreamInfo
+            var info = new StreamInfo
             {
                 App = appSplit[0],
                 Variant = appSplit.Length > 1 ? appSplit[1] : "",
                 ClientId = req.ClientId!,
-                StreamId = req.StreamId ?? req.ClientId!,
                 StreamKey = req.Stream,
                 EdgeIp = req.Ip!
-            });
-
+            };
+            
             if (req.Action == "on_forward")
             {
-                var urls = await streamManager.OnForward();
+                var newStream = await _streamManagerFactory.CreateStream(info);
+                var urls = await newStream.OnForward();
                 if (urls.Count > 0)
                 {
                     return new SrsForwardHookReply
@@ -63,6 +63,7 @@ public class SrsController : Controller
                 };
             }
 
+            var streamManager = await _streamManagerFactory.ForStream(info);
             if (req.App.EndsWith("/source"))
             {
                 if (req.Action == "on_publish")
@@ -132,7 +133,7 @@ public class SrsHook
 
     [JsonProperty("client_id")]
     public string? ClientId { get; set; }
-    
+
     [JsonProperty("stream_id")]
     public string? StreamId { get; set; }
 
