@@ -78,5 +78,11 @@ public interface IStreamManager
     /// Republish stream event
     /// </summary>
     /// <returns></returns>
-    public Task UpdateEvent();
+    Task UpdateEvent();
+
+    /// <summary>
+    /// Return a list of recordings segments
+    /// </summary>
+    /// <returns></returns>
+    Task<List<UserStreamRecording>> GetRecordings();
 }

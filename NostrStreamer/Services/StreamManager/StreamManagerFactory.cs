@@ -89,7 +89,6 @@ public class StreamManagerFactory
             .AsNoTracking()
             .Include(a => a.User)
             .Include(a => a.Endpoint)
-            .Include(a => a.Recordings)
             .FirstOrDefaultAsync(a => a.Id == id);
 
         if (stream == default) throw new Exception("No live stream");
@@ -110,7 +109,6 @@ public class StreamManagerFactory
             .AsNoTracking()
             .Include(a => a.User)
             .Include(a => a.Endpoint)
-            .Include(a => a.Recordings)
             .FirstOrDefaultAsync(a => a.PubKey.Equals(pubkey) && a.State == UserStreamState.Live);
 
         if (stream == default) throw new Exception("No live stream");
@@ -131,7 +129,6 @@ public class StreamManagerFactory
             .AsNoTracking()
             .Include(a => a.User)
             .Include(a => a.Endpoint)
-            .Include(a => a.Recordings)
             .OrderByDescending(a => a.Starts)
             .FirstOrDefaultAsync(a =>
                 a.User.StreamKey.Equals(info.StreamKey) &&

@@ -201,9 +201,9 @@ public class PlaylistController : Controller
         try
         {
             var streamManager = await _streamManagerFactory.ForStream(id);
-            var userStream = streamManager.GetStream();
+            var recordings = await streamManager.GetRecordings();
 
-            if (userStream.Recordings.Count == 0)
+            if (recordings.Count == 0)
             {
                 Response.StatusCode = 404;
                 return;
@@ -219,7 +219,7 @@ public class PlaylistController : Controller
             await sw.WriteLineAsync("#EXT-X-MEDIA-SEQUENCE:0");
             //await sw.WriteLineAsync($"#EXT-X-MAP:URI=\"{id}_init.mp4\"");
 
-            foreach (var seg in userStream.Recordings.OrderBy(a => a.Timestamp))
+            foreach (var seg in recordings.OrderBy(a => a.Timestamp))
             {
                 await sw.WriteLineAsync($"#EXTINF:{seg.Duration},");
                 await sw.WriteLineAsync($"#EXT-X-PROGRAM-DATE-TIME:{seg.Timestamp:yyyy-MM-ddTHH:mm:ss.fffzzz}");
@@ -240,9 +240,9 @@ public class PlaylistController : Controller
         try
         {
             var streamManager = await _streamManagerFactory.ForStream(id);
-            var userStream = streamManager.GetStream();
+            var recordings = await streamManager.GetRecordings();
 
-            var firstFrag = await _client.GetStreamAsync(userStream.Recordings.First().Url);
+            var firstFrag = await _client.GetStreamAsync(recordings.First().Url);
             var tmpFrag = Path.GetTempFileName();
             await firstFrag.CopyToAsync(new FileStream(tmpFrag, FileMode.Open, FileAccess.ReadWrite));
 

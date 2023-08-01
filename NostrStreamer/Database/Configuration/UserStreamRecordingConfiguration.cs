@@ -18,7 +18,7 @@ public class UserStreamRecordingConfiguration : IEntityTypeConfiguration<UserStr
             .IsRequired();
         
         builder.HasOne(a => a.Stream)
-            .WithMany(a => a.Recordings)
+            .WithMany()
             .HasForeignKey(a => a.UserStreamId);
     }
 }

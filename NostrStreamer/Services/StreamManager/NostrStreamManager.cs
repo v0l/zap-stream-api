@@ -149,10 +149,17 @@ public class NostrStreamManager : IStreamManager
 
         await _context.Db.SaveChangesAsync();
     }
-    
+
     public async Task UpdateEvent()
     {
         await UpdateStreamState(_context.UserStream.State);
+    }
+
+    public async Task<List<UserStreamRecording>> GetRecordings()
+    {
+        return await _context.Db.Recordings.AsNoTracking()
+            .Where(a => a.UserStreamId == _context.UserStream.Id)
+            .ToListAsync();
     }
 
     public async Task UpdateViewers()
