@@ -83,6 +83,10 @@ public class S3DvrStore : IDvrStore
 
         var tsUpload = sw.Elapsed;
 
+        // cleanup temp file
+        fs.Close();
+        File.Delete(tmpFile);
+        
         _logger.LogInformation("download={tc:#,##0}ms, probe={pc:#,##0}ms, upload={uc:#,##0}ms", tsDownload.TotalMilliseconds,
             tsProbe.TotalMilliseconds, tsUpload.TotalMilliseconds);
 
