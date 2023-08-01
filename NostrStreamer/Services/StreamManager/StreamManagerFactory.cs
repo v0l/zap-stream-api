@@ -13,15 +13,17 @@ public class StreamManagerFactory
     private readonly StreamEventBuilder _eventBuilder;
     private readonly IServiceProvider _serviceProvider;
     private readonly IDvrStore _dvrStore;
+    private readonly ThumbnailService _thumbnailService;
 
     public StreamManagerFactory(StreamerContext db, ILoggerFactory loggerFactory, StreamEventBuilder eventBuilder,
-        IServiceProvider serviceProvider, IDvrStore dvrStore)
+        IServiceProvider serviceProvider, IDvrStore dvrStore, ThumbnailService thumbnailService)
     {
         _db = db;
         _loggerFactory = loggerFactory;
         _eventBuilder = eventBuilder;
         _serviceProvider = serviceProvider;
         _dvrStore = dvrStore;
+        _thumbnailService = thumbnailService;
     }
 
     public async Task<IStreamManager> CreateStream(StreamInfo info)
@@ -80,7 +82,7 @@ public class StreamManagerFactory
             EdgeApi = new SrsApi(_serviceProvider.GetRequiredService<HttpClient>(), new Uri($"http://{stream.EdgeIp}:1985"))
         };
 
-        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _dvrStore);
+        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _dvrStore, _thumbnailService);
     }
 
     public async Task<IStreamManager> ForStream(Guid id)
@@ -100,7 +102,7 @@ public class StreamManagerFactory
             EdgeApi = new SrsApi(_serviceProvider.GetRequiredService<HttpClient>(), new Uri($"http://{stream.EdgeIp}:1985"))
         };
 
-        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _dvrStore);
+        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _dvrStore, _thumbnailService);
     }
 
     public async Task<IStreamManager> ForCurrentStream(string pubkey)
@@ -120,7 +122,7 @@ public class StreamManagerFactory
             EdgeApi = new SrsApi(_serviceProvider.GetRequiredService<HttpClient>(), new Uri($"http://{stream.EdgeIp}:1985"))
         };
 
-        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _dvrStore);
+        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _dvrStore, _thumbnailService);
     }
 
     public async Task<IStreamManager> ForStream(StreamInfo info)
@@ -148,6 +150,6 @@ public class StreamManagerFactory
             EdgeApi = new SrsApi(_serviceProvider.GetRequiredService<HttpClient>(), new Uri($"http://{stream.EdgeIp}:1985"))
         };
 
-        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _dvrStore);
+        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _dvrStore, _thumbnailService);
     }
 }

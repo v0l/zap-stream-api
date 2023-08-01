@@ -13,14 +13,16 @@ public class NostrStreamManager : IStreamManager
     private readonly StreamManagerContext _context;
     private readonly StreamEventBuilder _eventBuilder;
     private readonly IDvrStore _dvrStore;
+    private readonly ThumbnailService _thumbnailService;
 
     public NostrStreamManager(ILogger<NostrStreamManager> logger, StreamManagerContext context,
-        StreamEventBuilder eventBuilder, IDvrStore dvrStore)
+        StreamEventBuilder eventBuilder, IDvrStore dvrStore, ThumbnailService thumbnailService)
     {
         _logger = logger;
         _context = context;
         _eventBuilder = eventBuilder;
         _dvrStore = dvrStore;
+        _thumbnailService = thumbnailService;
     }
 
     public UserStream GetStream()
@@ -51,6 +53,10 @@ public class NostrStreamManager : IStreamManager
         }
 
         await UpdateStreamState(UserStreamState.Live);
+
+#pragma warning disable CS4014
+        Task.Run(async () => await _thumbnailService.GenerateThumb(_context.UserStream));
+#pragma warning restore CS4014
     }
 
     public async Task StreamStopped()
