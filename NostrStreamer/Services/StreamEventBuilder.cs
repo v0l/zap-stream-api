@@ -37,7 +37,7 @@ public class StreamEventBuilder
             new("d", stream.Id.ToString()),
             new("title", user.Title ?? ""),
             new("summary", user.Summary ?? ""),
-            new("image", string.IsNullOrEmpty(user.Image) ? new Uri(_config.DataHost, $"{stream.Id}.jpg").ToString() : user.Image),
+            new("image", new Uri(_config.DataHost, $"{stream.Id}.jpg").ToString()),
             new("status", status),
             new("p", user.PubKey, "", "host"),
             new("relays", _config.Relays),
