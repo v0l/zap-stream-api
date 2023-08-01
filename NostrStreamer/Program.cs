@@ -5,8 +5,10 @@ using Microsoft.EntityFrameworkCore;
 using Nostr.Client.Client;
 using NostrStreamer.Database;
 using NostrStreamer.Services;
+using NostrStreamer.Services.Background;
 using NostrStreamer.Services.Dvr;
 using NostrStreamer.Services.StreamManager;
+using NostrStreamer.Services.Thumbnail;
 
 namespace NostrStreamer;
 
@@ -58,7 +60,8 @@ internal static class Program
         services.AddTransient<StreamEventBuilder>();
         services.AddTransient<StreamManagerFactory>();
         services.AddTransient<UserService>();
-        services.AddTransient<ThumbnailService>();
+
+        services.AddTransient<IThumbnailService, S3ThumbnailService>();
         services.AddHostedService<ThumbnailGenerator>();
         services.AddTransient<IDvrStore, S3DvrStore>();
         

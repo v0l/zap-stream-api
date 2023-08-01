@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using NostrStreamer.Database;
+using NostrStreamer.Services.Thumbnail;
 
-namespace NostrStreamer.Services;
+namespace NostrStreamer.Services.Background;
 
 public class ThumbnailGenerator : BackgroundService
 {
@@ -22,7 +23,7 @@ public class ThumbnailGenerator : BackgroundService
             {
                 using var scope = _scopeFactory.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<StreamerContext>();
-                var gen = scope.ServiceProvider.GetRequiredService<ThumbnailService>();
+                var gen = scope.ServiceProvider.GetRequiredService<IThumbnailService>();
 
                 var streams = await db.Streams
                     .AsNoTracking()

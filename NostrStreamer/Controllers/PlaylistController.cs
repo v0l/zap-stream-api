@@ -16,11 +16,9 @@ public class PlaylistController : Controller
     private readonly SrsApi _srsApi;
     private readonly ViewCounter _viewCounter;
     private readonly StreamManagerFactory _streamManagerFactory;
-    private readonly ThumbnailService _thumbnailService;
 
     public PlaylistController(Config config, ILogger<PlaylistController> logger,
-        HttpClient client, SrsApi srsApi, ViewCounter viewCounter, StreamManagerFactory streamManagerFactory,
-        ThumbnailService thumbnailService)
+        HttpClient client, SrsApi srsApi, ViewCounter viewCounter, StreamManagerFactory streamManagerFactory)
     {
         _config = config;
         _logger = logger;
@@ -28,7 +26,6 @@ public class PlaylistController : Controller
         _srsApi = srsApi;
         _viewCounter = viewCounter;
         _streamManagerFactory = streamManagerFactory;
-        _thumbnailService = thumbnailService;
     }
 
     [ResponseCache(Duration = 1, Location = ResponseCacheLocation.Any)]
@@ -81,34 +78,6 @@ public class PlaylistController : Controller
         catch (Exception ex)
         {
             _logger.LogWarning("Failed to get stream for {stream} {message}", id, ex.Message);
-            Response.StatusCode = 404;
-        }
-    }
-
-    [ResponseCache(Duration = 30, Location = ResponseCacheLocation.Any)]
-    [HttpGet("{id}.jpg")]
-    public async Task GetPreview([FromRoute] Guid id)
-    {
-        try
-        {
-            var stream = _thumbnailService.GetThumbnail(id);
-            if (stream != default)
-            {
-                Response.ContentLength = stream.Length;
-                Response.ContentType = "image/jpg";
-                Response.Headers.CacheControl = "public, max-age=60";
-                await Response.StartAsync();
-                await stream.CopyToAsync(Response.Body);
-                await Response.CompleteAsync();
-            }
-            else
-            {
-                Response.StatusCode = 404;
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning("Failed to get preview image for {id} {message}", id, ex.Message);
             Response.StatusCode = 404;
         }
     }

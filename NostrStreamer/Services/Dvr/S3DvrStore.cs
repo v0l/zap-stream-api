@@ -17,8 +17,8 @@ public class S3DvrStore : IDvrStore
     {
         _httpClient = httpClient;
         _logger = logger;
-        _config = config.DvrStore;
-        _client = config.DvrStore.CreateClient();
+        _config = config.S3Store;
+        _client = config.S3Store.CreateClient();
     }
 
     public async Task<UploadResult> UploadRecording(UserStream stream, Uri source)

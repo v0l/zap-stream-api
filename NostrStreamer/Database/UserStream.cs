@@ -21,9 +21,9 @@ public class UserStream
     public string Event { get; set; } = null!;
     
     /// <summary>
-    /// Recording URL of ended stream
+    /// URL of auto-generated thumbnail
     /// </summary>
-    public string? Recording { get; set; }
+    public string? Thumbnail { get; set; }
 
     public Guid EndpointId { get; init; }
     public IngestEndpoint Endpoint { get; init; } = null!;

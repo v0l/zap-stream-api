@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Nostr.Client.Utils;
 using NostrStreamer.Database;
 
-namespace NostrStreamer.Services;
+namespace NostrStreamer.Services.Background;
 
 public class LndInvoicesStream : BackgroundService
 {

@@ -12,7 +12,6 @@ public class NostrStreamManager : IStreamManager
     private readonly StreamManagerContext _context;
     private readonly StreamEventBuilder _eventBuilder;
     private readonly IDvrStore _dvrStore;
-    private readonly ThumbnailService _thumbnailService;
     private readonly Config _config;
 
     public NostrStreamManager(ILogger<NostrStreamManager> logger, StreamManagerContext context, IServiceProvider serviceProvider)
@@ -21,7 +20,6 @@ public class NostrStreamManager : IStreamManager
         _context = context;
         _eventBuilder = serviceProvider.GetRequiredService<StreamEventBuilder>();
         _dvrStore = serviceProvider.GetRequiredService<IDvrStore>();
-        _thumbnailService = serviceProvider.GetRequiredService<ThumbnailService>();
         _config = serviceProvider.GetRequiredService<Config>();
     }
 
@@ -56,11 +54,8 @@ public class NostrStreamManager : IStreamManager
     {
         _logger.LogInformation("Stream started for: {pubkey}", _context.User.PubKey);
         TestCanStream();
-        await UpdateStreamState(UserStreamState.Live);
 
-#pragma warning disable CS4014
-        Task.Run(async () => await _thumbnailService.GenerateThumb(_context.UserStream));
-#pragma warning restore CS4014
+        await UpdateStreamState(UserStreamState.Live);
     }
 
     public async Task StreamStopped()

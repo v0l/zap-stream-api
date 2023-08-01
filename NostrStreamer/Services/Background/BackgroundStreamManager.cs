@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using NostrStreamer.Database;
 using NostrStreamer.Services.StreamManager;
 
-namespace NostrStreamer.Services;
+namespace NostrStreamer.Services.Background;
 
 public class BackgroundStreamManager : BackgroundService
 {

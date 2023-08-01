@@ -5,7 +5,7 @@ using Nostr.Client.Communicator;
 using Nostr.Client.Requests;
 using Websocket.Client.Models;
 
-namespace NostrStreamer.Services;
+namespace NostrStreamer.Services.Background;
 
 public class NostrListener : IDisposable
 {

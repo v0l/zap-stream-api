@@ -22,7 +22,7 @@ public class UserStreamConfiguration : IEntityTypeConfiguration<UserStream>
         builder.Property(a => a.Event)
             .IsRequired();
 
-        builder.Property(a => a.Recording);
+        builder.Property(a => a.Thumbnail);
 
         builder.Property(a => a.EdgeIp)
             .IsRequired();
