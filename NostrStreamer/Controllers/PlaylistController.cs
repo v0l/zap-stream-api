@@ -31,6 +31,7 @@ public class PlaylistController : Controller
         _thumbnailService = thumbnailService;
     }
 
+    [ResponseCache(Duration = 1, Location = ResponseCacheLocation.Any)]
     [HttpGet("{variant}/{id}.m3u8")]
     public async Task RewritePlaylist([FromRoute] Guid id, [FromRoute] string variant, [FromQuery(Name = "hls_ctx")] string hlsCtx)
     {
@@ -84,6 +85,7 @@ public class PlaylistController : Controller
         }
     }
 
+    [ResponseCache(Duration = 30, Location = ResponseCacheLocation.Any)]
     [HttpGet("{id}.jpg")]
     public async Task GetPreview([FromRoute] Guid id)
     {
@@ -111,6 +113,7 @@ public class PlaylistController : Controller
         }
     }
 
+    [ResponseCache(Duration = 1, Location = ResponseCacheLocation.Any)]
     [HttpGet("{pubkey}.m3u8")]
     public async Task<IActionResult> GetCurrentStreamRedirect([FromRoute] string pubkey)
     {
@@ -128,6 +131,7 @@ public class PlaylistController : Controller
         return NotFound();
     }
 
+    [ResponseCache(Duration = 1, Location = ResponseCacheLocation.Any)]
     [HttpGet("stream/{id:guid}.m3u8")]
     public async Task CreateMultiBitrate([FromRoute] Guid id)
     {
@@ -195,6 +199,7 @@ public class PlaylistController : Controller
         }
     }
 
+    [ResponseCache(Duration = 300, Location = ResponseCacheLocation.Any)]
     [HttpGet("recording/{id:guid}.m3u8")]
     public async Task RecordingPlaylist([FromRoute] Guid id)
     {
