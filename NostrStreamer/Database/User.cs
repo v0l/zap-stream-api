@@ -38,6 +38,11 @@ public class User
     /// Any content warning tag (NIP-36)
     /// </summary>
     public string? ContentWarning { get; set; }
+    
+    /// <summary>
+    /// Date when user accepted TOS
+    /// </summary>
+    public DateTime? TosAccepted { get; init; }
 
     /// <summary>
     /// Concurrency token

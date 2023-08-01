@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Nostr.Client.Json;
@@ -14,15 +13,16 @@ public class NostrStreamManager : IStreamManager
     private readonly StreamEventBuilder _eventBuilder;
     private readonly IDvrStore _dvrStore;
     private readonly ThumbnailService _thumbnailService;
+    private readonly Config _config;
 
-    public NostrStreamManager(ILogger<NostrStreamManager> logger, StreamManagerContext context,
-        StreamEventBuilder eventBuilder, IDvrStore dvrStore, ThumbnailService thumbnailService)
+    public NostrStreamManager(ILogger<NostrStreamManager> logger, StreamManagerContext context, IServiceProvider serviceProvider)
     {
         _logger = logger;
         _context = context;
-        _eventBuilder = eventBuilder;
-        _dvrStore = dvrStore;
-        _thumbnailService = thumbnailService;
+        _eventBuilder = serviceProvider.GetRequiredService<StreamEventBuilder>();
+        _dvrStore = serviceProvider.GetRequiredService<IDvrStore>();
+        _thumbnailService = serviceProvider.GetRequiredService<ThumbnailService>();
+        _config = serviceProvider.GetRequiredService<Config>();
     }
 
     public UserStream GetStream()
@@ -30,13 +30,22 @@ public class NostrStreamManager : IStreamManager
         return _context.UserStream;
     }
 
-    public Task<List<string>> OnForward()
+    public void TestCanStream()
     {
         if (_context.User.Balance <= 0)
         {
             throw new LowBalanceException("User balance empty");
         }
 
+        if (_context.User.TosAccepted == null || _context.User.TosAccepted < _config.TosDate)
+        {
+            throw new Exception("TOS not accepted");
+        }
+    }
+
+    public Task<List<string>> OnForward()
+    {
+        TestCanStream();
         return Task.FromResult(new List<string>
         {
             $"rtmp://127.0.0.1:1935/{_context.UserStream.Endpoint.App}/{_context.User.StreamKey}?vhost={_context.UserStream.Endpoint.Forward}"
@@ -46,12 +55,7 @@ public class NostrStreamManager : IStreamManager
     public async Task StreamStarted()
     {
         _logger.LogInformation("Stream started for: {pubkey}", _context.User.PubKey);
-
-        if (_context.User.Balance <= 0)
-        {
-            throw new Exception("User balance empty");
-        }
-
+        TestCanStream();
         await UpdateStreamState(UserStreamState.Live);
 
 #pragma warning disable CS4014
@@ -93,31 +97,6 @@ public class NostrStreamManager : IStreamManager
             _logger.LogInformation("Kicking stream due to low balance");
             await _context.EdgeApi.KickClient(_context.UserStream.ForwardClientId);
         }
-    }
-
-    public async Task PatchEvent(string? title, string? summary, string? image, string[]? tags, string? contentWarning)
-    {
-        var user = _context.User;
-
-        await _context.Db.Users
-            .Where(a => a.PubKey == _context.User.PubKey)
-            .ExecuteUpdateAsync(o => o.SetProperty(v => v.Title, title)
-                .SetProperty(v => v.Summary, summary)
-                .SetProperty(v => v.Image, image)
-                .SetProperty(v => v.Tags, tags != null ? string.Join(",", tags) : null)
-                .SetProperty(v => v.ContentWarning, contentWarning));
-
-        user.Title = title;
-        user.Summary = summary;
-        user.Image = image;
-        user.Tags = tags != null ? string.Join(",", tags) : null;
-        user.ContentWarning = contentWarning;
-
-        var ev = _eventBuilder.CreateStreamEvent(user, _context.UserStream);
-        await _context.Db.Streams.Where(a => a.Id == _context.UserStream.Id)
-            .ExecuteUpdateAsync(o => o.SetProperty(v => v.Event, JsonConvert.SerializeObject(ev, NostrSerializer.Settings)));
-
-        _eventBuilder.BroadcastEvent(ev);
     }
 
     public async Task AddGuest(string pubkey, string role, decimal zapSplit)

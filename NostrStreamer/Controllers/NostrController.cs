@@ -43,16 +43,16 @@ public class NostrController : Controller
             .AsNoTracking()
             .ToListAsync();
 
-        var latestEvent = await _db.Streams
-            .AsNoTracking()
-            .Where(a => a.User.PubKey == user.PubKey)
-            .OrderByDescending(a => a.Starts)
-            .Select(a => a.Event)
-            .FirstOrDefaultAsync();
-
         var account = new Account
         {
-            Event = !string.IsNullOrEmpty(latestEvent) ? JsonConvert.DeserializeObject<NostrEvent>(latestEvent, NostrSerializer.Settings) : null,
+            Event = new PatchEvent()
+            {
+                Title = user.Title ?? "",
+                Summary = user.Summary ?? "",
+                Image = user.Image ?? "",
+                ContentWarning = user.ContentWarning,
+                Tags = user.SplitTags()
+            },
             Endpoints = endpoints.Select(a => new AccountEndpoint
             {
                 Name = a.Name,
@@ -65,7 +65,12 @@ public class NostrController : Controller
                     Rate = a.Cost / 1000d
                 }
             }).ToList(),
-            Balance = (long)Math.Floor(user.Balance / 1000m)
+            Balance = (long)Math.Floor(user.Balance / 1000m),
+            Tos = new()
+            {
+                Accepted = user.TosAccepted >= _config.TosDate,
+                Link = new Uri(_config.ApiHost, "/tos")
+            }
         };
 
         return Content(JsonConvert.SerializeObject(account, NostrSerializer.Settings), "application/json");
@@ -77,8 +82,17 @@ public class NostrController : Controller
         var pubkey = GetPubKey();
         if (string.IsNullOrEmpty(pubkey)) return Unauthorized();
 
-        var streamManager = await _streamManagerFactory.ForCurrentStream(pubkey);
-        await streamManager.PatchEvent(req.Title, req.Summary, req.Image, req.Tags, req.ContentWarning);
+        await _userService.UpdateStreamInfo(pubkey, req);
+        try
+        {
+            var streamManager = await _streamManagerFactory.ForCurrentStream(pubkey);
+            await streamManager.UpdateEvent();
+        }
+        catch
+        {
+            //ignore
+        }
+
         return Accepted();
     }
 
@@ -93,6 +107,23 @@ public class NostrController : Controller
         {
             pr = invoice
         });
+    }
+
+    [HttpPatch("account")]
+    public async Task<IActionResult> PatchAccount([FromBody] PatchAccount patch)
+    {
+        var user = await GetUser();
+        if (user == default)
+        {
+            return NotFound();
+        }
+
+        if (patch.AcceptTos)
+        {
+            await _userService.AcceptTos(user.PubKey);
+        }
+
+        return Accepted();
     }
 
     private async Task<User?> GetUser()

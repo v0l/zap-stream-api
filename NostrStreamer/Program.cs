@@ -23,6 +23,7 @@ internal static class Program
         services.AddCors();
         services.AddMemoryCache();
         services.AddHttpClient();
+        services.AddRazorPages();
         services.AddControllers().AddNewtonsoftJson();
         services.AddSingleton(config);
         
@@ -75,6 +76,7 @@ internal static class Program
 
         app.UseCors(o => o.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
         app.UseAuthorization();
+        app.MapRazorPages();
         app.MapControllers();
 
         await app.RunAsync();

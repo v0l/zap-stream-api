@@ -61,8 +61,7 @@ public class StreamEventBuilder
             tags.Add(new("recording", new Uri(_config.DataHost, $"recording/{stream.Id}.m3u8").ToString()));
         }
 
-        foreach (var tag in !string.IsNullOrEmpty(user.Tags) ?
-                     user.Tags.Split(",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) : Array.Empty<string>())
+        foreach (var tag in user.SplitTags())
         {
             tags.Add(new("t", tag));
         }

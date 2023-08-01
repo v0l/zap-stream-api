@@ -1,18 +1,20 @@
 using Newtonsoft.Json;
-using Nostr.Client.Messages;
 
 namespace NostrStreamer.ApiModel;
 
 public class Account
 {
     [JsonProperty("event")]
-    public NostrEvent? Event { get; init; }
+    public PatchEvent? Event { get; init; }
 
     [JsonProperty("endpoints")]
     public List<AccountEndpoint> Endpoints { get; init; } = new();
     
     [JsonProperty("balance")]
     public long Balance { get; init; }
+    
+    [JsonProperty("tos")]
+    public AccountTos Tos { get; init; }
 }
 
 public class AccountEndpoint
@@ -42,15 +44,11 @@ public class EndpointCost
     public string Unit { get; init; } = null!;
 }
 
-[Obsolete("Use EndpointCost")]
-public class AccountQuota
+public class AccountTos
 {
-    [JsonProperty("rate")]
-    public double Rate { get; init; }
+    [JsonProperty("accepted")]
+    public bool Accepted { get; init; }
 
-    [JsonProperty("unit")]
-    public string Unit { get; init; } = null!;
-
-    [JsonProperty("remaining")]
-    public long Remaining { get; init; }
+    [JsonProperty("link")]
+    public Uri Link { get; init; } = null!;
 }

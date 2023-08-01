@@ -38,6 +38,8 @@ public class Config
     public LndConfig Lnd { get; init; } = null!;
 
     public S3BlobConfig DvrStore { get; init; } = null!;
+    
+    public DateTime TosDate { get; init; }
 }
 
 public class LndConfig

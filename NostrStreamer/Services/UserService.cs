@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Nostr.Client.Utils;
+using NostrStreamer.ApiModel;
 using NostrStreamer.Database;
 
 namespace NostrStreamer.Services;
@@ -68,5 +69,24 @@ public class UserService
     {
         return await _db.Users.AsNoTracking()
             .SingleOrDefaultAsync(a => a.PubKey.Equals(pubkey));
+    }
+
+    public async Task AcceptTos(string pubkey)
+    {
+        var change = await _db.Users.Where(a => a.PubKey.Equals(pubkey))
+            .ExecuteUpdateAsync(o => o.SetProperty(v => v.TosAccepted, DateTime.UtcNow));
+
+        if (change != 1) throw new Exception($"Failed to accept TOS, {change} rows updated.");
+    }
+
+    public async Task UpdateStreamInfo(string pubkey, PatchEvent req)
+    {
+        await _db.Users
+            .Where(a => a.PubKey == pubkey)
+            .ExecuteUpdateAsync(o => o.SetProperty(v => v.Title, req.Title)
+                .SetProperty(v => v.Summary, req.Summary)
+                .SetProperty(v => v.Image, req.Image)
+                .SetProperty(v => v.Tags, req.Tags.Length > 0 ? string.Join(",", req.Tags) : null)
+                .SetProperty(v => v.ContentWarning, req.ContentWarning));
     }
 }

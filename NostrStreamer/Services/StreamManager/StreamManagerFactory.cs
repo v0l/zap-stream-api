@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Nostr.Client.Json;
 using NostrStreamer.Database;
-using NostrStreamer.Services.Dvr;
 
 namespace NostrStreamer.Services.StreamManager;
 
@@ -12,18 +11,16 @@ public class StreamManagerFactory
     private readonly ILoggerFactory _loggerFactory;
     private readonly StreamEventBuilder _eventBuilder;
     private readonly IServiceProvider _serviceProvider;
-    private readonly IDvrStore _dvrStore;
-    private readonly ThumbnailService _thumbnailService;
+    private readonly Config _config;
 
     public StreamManagerFactory(StreamerContext db, ILoggerFactory loggerFactory, StreamEventBuilder eventBuilder,
-        IServiceProvider serviceProvider, IDvrStore dvrStore, ThumbnailService thumbnailService)
+        IServiceProvider serviceProvider, Config config)
     {
         _db = db;
         _loggerFactory = loggerFactory;
         _eventBuilder = eventBuilder;
         _serviceProvider = serviceProvider;
-        _dvrStore = dvrStore;
-        _thumbnailService = thumbnailService;
+        _config = config;
     }
 
     public async Task<IStreamManager> CreateStream(StreamInfo info)
@@ -47,7 +44,12 @@ public class StreamManagerFactory
 
         if (user.Balance <= 0)
         {
-            throw new Exception("Cannot start stream with empty balance");
+            throw new LowBalanceException("Cannot start stream with empty balance");
+        }
+
+        if (user.TosAccepted == null || user.TosAccepted < _config.TosDate)
+        {
+            throw new Exception("TOS not accepted");
         }
 
         var stream = new UserStream
@@ -82,7 +84,7 @@ public class StreamManagerFactory
             EdgeApi = new SrsApi(_serviceProvider.GetRequiredService<HttpClient>(), new Uri($"http://{stream.EdgeIp}:1985"))
         };
 
-        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _dvrStore, _thumbnailService);
+        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _serviceProvider);
     }
 
     public async Task<IStreamManager> ForStream(Guid id)
@@ -102,7 +104,7 @@ public class StreamManagerFactory
             EdgeApi = new SrsApi(_serviceProvider.GetRequiredService<HttpClient>(), new Uri($"http://{stream.EdgeIp}:1985"))
         };
 
-        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _dvrStore, _thumbnailService);
+        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _serviceProvider);
     }
 
     public async Task<IStreamManager> ForCurrentStream(string pubkey)
@@ -122,7 +124,7 @@ public class StreamManagerFactory
             EdgeApi = new SrsApi(_serviceProvider.GetRequiredService<HttpClient>(), new Uri($"http://{stream.EdgeIp}:1985"))
         };
 
-        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _dvrStore, _thumbnailService);
+        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _serviceProvider);
     }
 
     public async Task<IStreamManager> ForStream(StreamInfo info)
@@ -150,6 +152,6 @@ public class StreamManagerFactory
             EdgeApi = new SrsApi(_serviceProvider.GetRequiredService<HttpClient>(), new Uri($"http://{stream.EdgeIp}:1985"))
         };
 
-        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _eventBuilder, _dvrStore, _thumbnailService);
+        return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _serviceProvider);
     }
 }

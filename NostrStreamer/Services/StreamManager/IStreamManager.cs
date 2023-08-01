@@ -9,6 +9,12 @@ public interface IStreamManager
     /// </summary>
     /// <returns></returns>
     UserStream GetStream();
+
+    /// <summary>
+    /// Test if streaming is allowed for this user, otherwise throw
+    /// </summary>
+    /// <exception cref="Exception">Throws if cant stream</exception>
+    void TestCanStream();
     
     /// <summary>
     /// Stream ingress check on srs-edge
@@ -34,17 +40,6 @@ public interface IStreamManager
     /// <param name="duration"></param>
     /// <returns></returns>
     Task ConsumeQuota(double duration);
-
-    /// <summary>
-    /// Update stream details
-    /// </summary>
-    /// <param name="title"></param>
-    /// <param name="summary"></param>
-    /// <param name="image"></param>
-    /// <param name="tags"></param>
-    /// <param name="contentWarning"></param>
-    /// <returns></returns>
-    Task PatchEvent(string? title, string? summary, string? image, string[]? tags, string? contentWarning);
 
     /// <summary>
     /// Update viewer count

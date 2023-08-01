@@ -14,6 +14,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(a => a.Balance)
             .IsRequired();
 
+        builder.Property(a => a.TosAccepted)
+            .IsRequired();
+        
         builder.Property(a => a.Version)
             .IsRowVersion();
 

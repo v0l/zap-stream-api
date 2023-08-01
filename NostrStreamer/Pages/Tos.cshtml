@@ -1,0 +1,63 @@
+@page
+@using NostrStreamer
+@model NostrStreamer.Pages.Tos
+@inject Config Config
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>api.zap.stream Terms of Service</title>
+</head>
+
+<body>
+<h1>api.zap.stream Terms of Service</h1>
+<p>
+    <strong>Effective Date:</strong> @Config.TosDate.ToString("u")</p>
+<p>
+    Welcome to zap.stream! By using our streaming service, you agree to the following Terms of Service ("Terms").
+    Please read them carefully.
+</p>
+<ol>
+    <li>
+        User Accounts: You are responsible for maintaining the security of your account and any activities that occur
+        under it.
+    </li>
+    <li>
+        User Conduct: You agree not to violate any laws, infringe upon others' rights, or engage in fraudulent or
+        harmful activities while using our service.
+    </li>
+    <li>
+        Prohibited Content: You may not stream or upload copyrighted content unless you have obtained the necessary
+        rights or permissions.
+    </li>
+    <li>
+        Termination: We reserve the right to suspend or terminate your access to the service if you violate these
+        Terms.
+    </li>
+    <li>
+        Disclaimer: The zap.stream service is provided "as is" without any warranties.
+    </li>
+    <li>
+        Limitation of Liability: We shall not be liable for any damages arising from your use of the service.
+    </li>
+    <li>
+        Governing Law: These Terms shall be governed by and construed in accordance with the applicable local laws,
+        regulations, and jurisdiction where the service is accessed and used.
+    </li>
+    <li>
+        Modifications: We may update these Terms from time to time, and your continued use of the service constitutes
+        acceptance of the modified Terms.
+    </li>
+    <li>
+        Entire Agreement: These Terms constitute the entire agreement between you and zap.stream.
+    </li>
+</ol>
+<p>If you have any questions or concerns, please contact us at <a href="mailto:info@zap.stream">info@zap.stream</a>.</p>
+<p>By using zap.stream, you agree to abide by these Terms of Service. Enjoy your streaming experience!</p>
+</body>
+
+</html>

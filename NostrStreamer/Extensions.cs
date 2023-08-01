@@ -20,7 +20,7 @@ public static class Extensions
     {
         return NostrPrivateKey.FromBech32(cfg.PrivateKey).DerivePublicKey().Hex;
     }
-    
+
     public static NostrPrivateKey GetPrivateKey(this Config cfg)
     {
         return NostrPrivateKey.FromBech32(cfg.PrivateKey);
@@ -32,7 +32,7 @@ public static class Extensions
             .Where(a => a.StartsWith("variant"))
             .Select(Variant.FromString).ToList();
     }
-    
+
     public static AmazonS3Client CreateClient(this S3BlobConfig c)
     {
         return new AmazonS3Client(new BasicAWSCredentials(c.AccessKey, c.SecretKey),
@@ -43,6 +43,12 @@ public static class Extensions
                 UseHttp = c.ServiceUrl.Scheme == "http",
                 ForcePathStyle = true
             });
+    }
+
+    public static string[] SplitTags(this User user)
+    {
+        return !string.IsNullOrEmpty(user.Tags) ?
+            user.Tags.Split(",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) : Array.Empty<string>();
     }
 }
 
