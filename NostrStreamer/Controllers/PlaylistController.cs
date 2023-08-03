@@ -16,9 +16,10 @@ public class PlaylistController : Controller
     private readonly SrsApi _srsApi;
     private readonly ViewCounter _viewCounter;
     private readonly StreamManagerFactory _streamManagerFactory;
+    private readonly EdgeSteering _edgeSteering;
 
     public PlaylistController(Config config, ILogger<PlaylistController> logger,
-        HttpClient client, SrsApi srsApi, ViewCounter viewCounter, StreamManagerFactory streamManagerFactory)
+        HttpClient client, SrsApi srsApi, ViewCounter viewCounter, StreamManagerFactory streamManagerFactory, EdgeSteering edgeSteering)
     {
         _config = config;
         _logger = logger;
@@ -26,6 +27,7 @@ public class PlaylistController : Controller
         _srsApi = srsApi;
         _viewCounter = viewCounter;
         _streamManagerFactory = streamManagerFactory;
+        _edgeSteering = edgeSteering;
     }
 
     [ResponseCache(Duration = 1, Location = ResponseCacheLocation.Any)]
@@ -106,6 +108,7 @@ public class PlaylistController : Controller
     {
         try
         {
+            var edge = _edgeSteering.GetEdge(HttpContext);
             var streamManager = await _streamManagerFactory.ForStream(id);
             var userStream = streamManager.GetStream();
 
@@ -138,8 +141,17 @@ public class PlaylistController : Controller
                 await sw.WriteLineAsync(
                     $"#EXT-X-STREAM-INF:{string.Join(",", allArgs)}");
 
-                var u = $"../{variant.SourceName}/{userStream.Id}.m3u8{(!string.IsNullOrEmpty(hlsCtx) ? $"?hls_ctx={hlsCtx}" : "")}";
-                await sw.WriteLineAsync(u);
+                var path = $"{variant.SourceName}/{userStream.Id}.m3u8{(!string.IsNullOrEmpty(hlsCtx) ? $"?hls_ctx={hlsCtx}" : "")}";
+                if (edge != default)
+                {
+                    var u = new Uri(edge.Url, path);
+                    await sw.WriteLineAsync(u.ToString());
+                }
+                else
+                {
+                    var u = $"../{path}";
+                    await sw.WriteLineAsync(u);
+                }
             }
         }
         catch (Exception ex)

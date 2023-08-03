@@ -40,6 +40,10 @@ public class Config
     public S3BlobConfig S3Store { get; init; } = null!;
     
     public DateTime TosDate { get; init; }
+
+    public string GeoIpDatabase { get; init; } = null!;
+    
+    public List<EdgeLocation> Edges { get; init; } = new();
 }
 
 public class LndConfig
@@ -61,4 +65,12 @@ public sealed class S3BlobConfig
     public string BucketName { get; init; } = "zap-stream-dvr";
     public bool DisablePayloadSigning { get; init; }
     public Uri PublicHost { get; init; } = null!;
+}
+
+public sealed class EdgeLocation
+{
+    public string Name { get; init; } = null!;
+    public Uri Url { get; init; } = null!;
+    public double Latitude { get; init; }
+    public double Longitude { get; init; }
 }

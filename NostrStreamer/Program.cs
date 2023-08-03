@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using MaxMind.GeoIP2;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -28,6 +29,10 @@ internal static class Program
         services.AddRazorPages();
         services.AddControllers().AddNewtonsoftJson();
         services.AddSingleton(config);
+        
+        // GeoIP
+        services.AddSingleton<IGeoIP2DatabaseReader>(_ => new DatabaseReader(config.GeoIpDatabase));
+        services.AddTransient<EdgeSteering>();
         
         // nostr auth
         services.AddTransient<NostrAuthHandler>();
