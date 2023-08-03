@@ -138,10 +138,8 @@ public class PlaylistController : Controller
                 await sw.WriteLineAsync(
                     $"#EXT-X-STREAM-INF:{string.Join(",", allArgs)}");
 
-                var u = new Uri(_config.DataHost,
-                    $"{variant.SourceName}/{userStream.Id}.m3u8{(!string.IsNullOrEmpty(hlsCtx) ? $"?hls_ctx={hlsCtx}" : "")}");
-
-                await sw.WriteLineAsync(u.ToString());
+                var u = $"../{variant.SourceName}/{userStream.Id}.m3u8{(!string.IsNullOrEmpty(hlsCtx) ? $"?hls_ctx={hlsCtx}" : "")}";
+                await sw.WriteLineAsync(u);
             }
         }
         catch (Exception ex)
