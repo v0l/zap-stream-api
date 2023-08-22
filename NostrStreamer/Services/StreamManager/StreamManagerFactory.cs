@@ -37,11 +37,6 @@ public class StreamManagerFactory
 
         if (ep == default) throw new Exception("No endpoint found");
 
-        if (await _db.Streams.CountAsync(a => a.State == UserStreamState.Live && a.PubKey == user.PubKey) != 0)
-        {
-            throw new Exception("Cannot start a new stream when already live");
-        }
-
         if (user.Balance <= 0)
         {
             throw new LowBalanceException("Cannot start stream with empty balance");
@@ -52,7 +47,10 @@ public class StreamManagerFactory
             throw new Exception("TOS not accepted");
         }
 
-        var stream = new UserStream
+        var existingLive = await _db.Streams
+            .SingleOrDefaultAsync(a => a.State == UserStreamState.Live && a.PubKey == user.PubKey);
+
+        var stream = existingLive ?? new UserStream
         {
             EndpointId = ep.Id,
             PubKey = user.PubKey,
@@ -62,10 +60,21 @@ public class StreamManagerFactory
             ForwardClientId = info.ClientId
         };
 
-        var ev = _eventBuilder.CreateStreamEvent(user, stream);
-        stream.Event = JsonConvert.SerializeObject(ev, NostrSerializer.Settings);
-        _db.Streams.Add(stream);
-        await _db.SaveChangesAsync();
+        // add new stream
+        if (existingLive == default)
+        {
+            var ev = _eventBuilder.CreateStreamEvent(user, stream);
+            stream.Event = JsonConvert.SerializeObject(ev, NostrSerializer.Settings);
+            _db.Streams.Add(stream);
+            await _db.SaveChangesAsync();
+        }
+        else
+        {
+            // resume stream, update edge forward info
+            existingLive.EdgeIp = info.EdgeIp;
+            existingLive.ForwardClientId = info.ClientId;
+            await _db.SaveChangesAsync();
+        }
 
         var ctx = new StreamManagerContext
         {

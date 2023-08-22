@@ -25,26 +25,25 @@ public class BackgroundStreamManager : BackgroundService
 
                 var streamManager = scope.ServiceProvider.GetRequiredService<StreamManagerFactory>();
                 var db = scope.ServiceProvider.GetRequiredService<StreamerContext>();
-                var srs = scope.ServiceProvider.GetRequiredService<SrsApi>();
 
-                var recentlyEnded = DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(5));
                 var liveStreams = await db.Streams
                     .AsNoTracking()
-                    .Where(a => a.State == UserStreamState.Live || a.Ends > recentlyEnded)
+                    .Where(a => a.State == UserStreamState.Live)
                     .Select(a => a.Id)
                     .ToListAsync(cancellationToken: stoppingToken);
 
                 foreach (var id in liveStreams)
                 {
                     var manager = await streamManager.ForStream(id);
-                    var client = await srs.GetStream(manager.GetStream().StreamId);
-                    if (client != default)
+                    var lastSegment = await manager.GetLatestRecordingSegment();
+                    var timeoutStream = DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(2)) > lastSegment?.Timestamp;
+                    if (timeoutStream)
                     {
-                        await manager.UpdateViewers();
+                        await manager.StreamStopped();
                     }
                     else
                     {
-                        await manager.StreamStopped();
+                        await manager.UpdateViewers();
                     }
                 }
             }

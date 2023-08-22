@@ -142,6 +142,14 @@ public class NostrStreamManager : IStreamManager
             .ToListAsync();
     }
 
+    public async Task<UserStreamRecording?> GetLatestRecordingSegment()
+    {
+        return await _context.Db.Recordings.AsNoTracking()
+            .Where(a => a.UserStreamId == _context.UserStream.Id)
+            .OrderByDescending(a => a.Timestamp)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task UpdateViewers()
     {
         if (_context.UserStream.State is not UserStreamState.Live) return;

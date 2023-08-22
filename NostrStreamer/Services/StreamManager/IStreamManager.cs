@@ -80,4 +80,10 @@ public interface IStreamManager
     /// </summary>
     /// <returns></returns>
     Task<List<UserStreamRecording>> GetRecordings();
+
+    /// <summary>
+    /// Return the last added recording segment
+    /// </summary>
+    /// <returns></returns>
+    Task<UserStreamRecording?> GetLatestRecordingSegment();
 }

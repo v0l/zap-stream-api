@@ -74,7 +74,8 @@ public class SrsController : Controller
 
                 if (req.Action == "on_unpublish")
                 {
-                    await streamManager.StreamStopped();
+                    //bug: ignore on_unpublish
+                    //await streamManager.StreamStopped();
                     return new();
                 }
 
