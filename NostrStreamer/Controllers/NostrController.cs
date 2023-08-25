@@ -1,10 +1,10 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Nostr.Client.Json;
-using Nostr.Client.Messages;
 using NostrStreamer.ApiModel;
 using NostrStreamer.Database;
 using NostrStreamer.Services;
@@ -13,6 +13,7 @@ using NostrStreamer.Services.StreamManager;
 namespace NostrStreamer.Controllers;
 
 [Authorize]
+[EnableCors]
 [Route("/api/nostr")]
 public class NostrController : Controller
 {

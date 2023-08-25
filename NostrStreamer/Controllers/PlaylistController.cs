@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using MediaFormatLibrary.MP4;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using NostrStreamer.Database;
 using NostrStreamer.Services;
@@ -8,6 +9,7 @@ using NostrStreamer.Services.StreamManager;
 namespace NostrStreamer.Controllers;
 
 [Route("/api/playlist")]
+[EnableCors]
 public class PlaylistController : Controller
 {
     private readonly ILogger<PlaylistController> _logger;

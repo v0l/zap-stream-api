@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using BTCPayServer.Lightning;
 using LNURL;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Nostr.Client.Json;
@@ -13,6 +14,7 @@ using NostrStreamer.Services;
 namespace NostrStreamer.Controllers;
 
 [Route("/api/pay")]
+[EnableCors]
 public class LnurlController : Controller
 {
     private readonly Config _config;
