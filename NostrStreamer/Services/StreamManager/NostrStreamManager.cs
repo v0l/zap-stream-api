@@ -118,16 +118,19 @@ public class NostrStreamManager : IStreamManager
     {
         //var matches = new Regex("\\.(\\d+)\\.[\\w]{2,4}$").Match(segment.AbsolutePath);
 
-        var result = await _dvrStore.UploadRecording(_context.UserStream, segment);
-        _context.Db.Recordings.Add(new()
+        if (_context.UserStream.Endpoint.Capabilities.Contains("dvr:source"))
         {
-            UserStreamId = _context.UserStream.Id,
-            Url = result.Result.ToString(),
-            Duration = result.Duration,
-            Timestamp = DateTime.UtcNow //DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(matches.Groups[1].Value)).UtcDateTime
-        });
+            var result = await _dvrStore.UploadRecording(_context.UserStream, segment);
+            _context.Db.Recordings.Add(new()
+            {
+                UserStreamId = _context.UserStream.Id,
+                Url = result.Result.ToString(),
+                Duration = result.Duration,
+                Timestamp = DateTime.UtcNow //DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(matches.Groups[1].Value)).UtcDateTime
+            });
 
-        await _context.Db.SaveChangesAsync();
+            await _context.Db.SaveChangesAsync();
+        }
     }
 
     public async Task UpdateEvent()
