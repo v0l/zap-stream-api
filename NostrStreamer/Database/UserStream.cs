@@ -37,7 +37,8 @@ public class UserStream
     /// Publisher edge client id
     /// </summary>
     public string ForwardClientId { get; set; } = null!;
-    
+
+    public DateTime LastSegment { get; set; } = DateTime.UtcNow;
     public List<UserStreamGuest> Guests { get; init; } = new();
 }
 

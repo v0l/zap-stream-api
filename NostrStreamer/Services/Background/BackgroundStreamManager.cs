@@ -35,8 +35,7 @@ public class BackgroundStreamManager : BackgroundService
                 foreach (var id in liveStreams)
                 {
                     var manager = await streamManager.ForStream(id);
-                    var lastSegment = await manager.GetLatestRecordingSegment();
-                    var timeoutStream = DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(2)) > lastSegment?.Timestamp;
+                    var timeoutStream = DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(2)) > manager.GetStream().LastSegment;
                     if (timeoutStream)
                     {
                         await manager.StreamStopped();

@@ -30,6 +30,9 @@ public class UserStreamConfiguration : IEntityTypeConfiguration<UserStream>
         builder.Property(a => a.ForwardClientId)
             .IsRequired();
 
+        builder.Property(a => a.LastSegment)
+            .IsRequired();
+        
         builder.HasOne(a => a.Endpoint)
             .WithMany()
             .HasForeignKey(a => a.EndpointId);

@@ -128,9 +128,13 @@ public class NostrStreamManager : IStreamManager
                 Duration = result.Duration,
                 Timestamp = DateTime.UtcNow //DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(matches.Groups[1].Value)).UtcDateTime
             });
-
+            
             await _context.Db.SaveChangesAsync();
         }
+
+        await _context.Db.Streams
+            .Where(a => a.Id == _context.UserStream.Id)
+            .ExecuteUpdateAsync(a => a.SetProperty(b => b.LastSegment, DateTime.UtcNow));
     }
 
     public async Task UpdateEvent()
