@@ -38,7 +38,7 @@ public class UserService
             PubKey = pubkey,
             Type = PaymentType.Credit,
             IsPaid = true,
-            Amount = (ulong)user.Balance,
+            Amount = (ulong)user.Balance / 1000,
             PaymentHash = SHA256.HashData(Encoding.UTF8.GetBytes($"{pubkey}-init-credit")).ToHex()
         });
         
