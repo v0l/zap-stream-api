@@ -57,7 +57,7 @@ public class LndInvoicesStream : BackgroundService
                                 payment.IsPaid = true;
                                 payment.User.Balance += (long)(payment.Amount * 1000L);
                                 await db.SaveChangesAsync(stoppingToken);
-                                if (!string.IsNullOrEmpty(payment.Nostr))
+                                if (!string.IsNullOrEmpty(payment.Nostr) && !string.IsNullOrEmpty(payment.Invoice))
                                 {
                                     zapService.HandlePaid(payment.Invoice, payment.Nostr);
                                 }

@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Nostr.Client.Utils;
 using NostrStreamer.ApiModel;
@@ -31,6 +33,15 @@ public class UserService
         };
 
         _db.Users.Add(user);
+        _db.Payments.Add(new Payment()
+        {
+            PubKey = pubkey,
+            Type = PaymentType.Credit,
+            IsPaid = true,
+            Amount = (ulong)user.Balance,
+            PaymentHash = SHA256.HashData(Encoding.UTF8.GetBytes($"{pubkey}-init-credit")).ToHex()
+        });
+        
         await _db.SaveChangesAsync();
         return user;
     }

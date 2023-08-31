@@ -7,7 +7,7 @@ public class Payment
     public string PubKey { get; init; } = null!;
     public User User { get; init; } = null!;
 
-    public string Invoice { get; init; } = null!;
+    public string? Invoice { get; init; }
     
     public bool IsPaid { get; set; }
     
@@ -23,5 +23,6 @@ public class Payment
 public enum PaymentType
 {
     Topup = 0,
-    Zap = 1
+    Zap = 1,
+    Credit = 2
 }
