@@ -98,6 +98,7 @@ public class UserService
                 .SetProperty(v => v.Summary, req.Summary)
                 .SetProperty(v => v.Image, req.Image)
                 .SetProperty(v => v.Tags, req.Tags.Length > 0 ? string.Join(",", req.Tags) : null)
-                .SetProperty(v => v.ContentWarning, req.ContentWarning));
+                .SetProperty(v => v.ContentWarning, req.ContentWarning)
+                .SetProperty(v => v.Goal, req.Goal));
     }
 }

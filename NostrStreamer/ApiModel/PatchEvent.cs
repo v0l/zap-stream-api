@@ -18,4 +18,7 @@ public class PatchEvent
     
     [JsonProperty("content_warning")]
     public string? ContentWarning { get; init; }
+    
+    [JsonProperty("goal")]
+    public string? Goal { get; init; }
 }

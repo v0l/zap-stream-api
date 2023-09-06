@@ -40,7 +40,7 @@ public class StreamEventBuilder
             new("image", stream.Thumbnail ?? user.Image ?? ""),
             new("status", status),
             new("p", user.PubKey, "", "host"),
-            new("relays", _config.Relays),
+            new("relays", _config.Relays)
         };
 
         if (status == "live")
@@ -66,6 +66,11 @@ public class StreamEventBuilder
             tags.Add(new("t", tag));
         }
 
+        if (!string.IsNullOrEmpty(user.Goal))
+        {
+            tags.Add(new("goal", user.Goal));
+        }
+        
         var ev = new NostrEvent
         {
             Kind = StreamEventKind,

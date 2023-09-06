@@ -43,6 +43,11 @@ public class User
     /// Date when user accepted TOS
     /// </summary>
     public DateTime? TosAccepted { get; init; }
+    
+    /// <summary>
+    /// Stream goal
+    /// </summary>
+    public string? Goal { get; init; }
 
     /// <summary>
     /// Concurrency token
