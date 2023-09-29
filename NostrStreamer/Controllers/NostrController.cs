@@ -52,7 +52,8 @@ public class NostrController : Controller
                 Summary = user.Summary ?? "",
                 Image = user.Image ?? "",
                 ContentWarning = user.ContentWarning,
-                Tags = user.SplitTags()
+                Tags = user.SplitTags(),
+                Goal = user.Goal
             },
             Endpoints = endpoints.Select(a => new AccountEndpoint
             {
