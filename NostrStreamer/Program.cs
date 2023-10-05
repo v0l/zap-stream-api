@@ -10,6 +10,7 @@ using NostrStreamer.Services.Background;
 using NostrStreamer.Services.Dvr;
 using NostrStreamer.Services.StreamManager;
 using NostrStreamer.Services.Thumbnail;
+using Prometheus;
 
 namespace NostrStreamer;
 
@@ -21,7 +22,7 @@ internal static class Program
 
         var services = builder.Services;
         var config = builder.Configuration.GetSection("Config").Get<Config>();
-        
+
         ConfigureDb(services, builder.Configuration);
         services.AddCors();
         services.AddMemoryCache();
@@ -29,11 +30,11 @@ internal static class Program
         services.AddRazorPages();
         services.AddControllers().AddNewtonsoftJson();
         services.AddSingleton(config);
-        
+
         // GeoIP
         services.AddSingleton<IGeoIP2DatabaseReader>(_ => new DatabaseReader(config.GeoIpDatabase));
         services.AddTransient<EdgeSteering>();
-        
+
         // nostr auth
         services.AddTransient<NostrAuthHandler>();
         services.AddAuthentication(o =>
@@ -49,14 +50,14 @@ internal static class Program
                 new ClaimsAuthorizationRequirement(ClaimTypes.Name, null)
             }, new[] {NostrAuth.Scheme});
         });
-        
+
         // nostr services
         services.AddSingleton<NostrMultiWebsocketClient>();
         services.AddSingleton<INostrClient>(s => s.GetRequiredService<NostrMultiWebsocketClient>());
         services.AddSingleton<NostrListener>();
         services.AddHostedService<NostrListenerLifetime>();
         services.AddTransient<ZapService>();
-        
+
         // streaming services
         services.AddTransient<SrsApi>();
         services.AddHostedService<BackgroundStreamManager>();
@@ -69,11 +70,11 @@ internal static class Program
         services.AddTransient<IThumbnailService, S3ThumbnailService>();
         services.AddHostedService<ThumbnailGenerator>();
         services.AddTransient<IDvrStore, S3DvrStore>();
-        
+
         // lnd services
         services.AddSingleton<LndNode>();
         services.AddHostedService<LndInvoicesStream>();
-        
+
         var app = builder.Build();
 
         using (var scope = app.Services.CreateScope())
@@ -82,14 +83,18 @@ internal static class Program
             await db.Database.MigrateAsync();
         }
 
+        app.UseRouting();
         app.UseCors(o => o.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
+        app.UseHttpMetrics();
         app.UseAuthorization();
+
         app.MapRazorPages();
         app.MapControllers();
+        app.MapMetrics();
 
         await app.RunAsync();
     }
-    
+
     private static void ConfigureDb(IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<StreamerContext>(o => o.UseNpgsql(configuration.GetConnectionString("Database")));
