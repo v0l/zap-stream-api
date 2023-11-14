@@ -82,7 +82,8 @@ public class NostrStreamManager : IStreamManager
         if (_context.User.Balance >= balanceAlertThreshold && _context.User.Balance - cost < balanceAlertThreshold)
         {
             var chat = _eventBuilder.CreateStreamChat(_context.UserStream,
-                $"Your balance is below {(int)(balanceAlertThreshold / 1000m)} sats, please topup");
+                $"Your balance is below {(int)(balanceAlertThreshold / 1000m)} sats, please topup, " +
+                $"or use this link: lnurlp://zap.stream/.well-known/lnurlp/${_context.User.PubKey}");
 
             _eventBuilder.BroadcastEvent(chat);
         }
@@ -128,7 +129,7 @@ public class NostrStreamManager : IStreamManager
                 Duration = result.Duration,
                 Timestamp = DateTime.UtcNow //DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(matches.Groups[1].Value)).UtcDateTime
             });
-            
+
             await _context.Db.SaveChangesAsync();
         }
 
