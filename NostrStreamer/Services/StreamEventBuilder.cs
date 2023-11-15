@@ -40,15 +40,14 @@ public class StreamEventBuilder
             new("image", stream.Thumbnail ?? user.Image ?? ""),
             new("status", status),
             new("p", user.PubKey, "", "host"),
-            new("relays", _config.Relays)
+            new("relays", _config.Relays),
+            new("starts", new DateTimeOffset(stream.Starts).ToUnixTimeSeconds())
         };
 
         if (status == "live")
         {
             var viewers = _viewCounter.Current(stream.Id);
-            var starts = new DateTimeOffset(stream.Starts).ToUnixTimeSeconds();
             tags.Add(new("streaming", new Uri(_config.DataHost, $"stream/{stream.Id}.m3u8").ToString()));
-            tags.Add(new("starts", starts.ToString()));
             tags.Add(new("current_participants", viewers.ToString()));
 
             if (!string.IsNullOrEmpty(user.ContentWarning))
@@ -59,6 +58,10 @@ public class StreamEventBuilder
         else if (status == "ended")
         {
             tags.Add(new("recording", new Uri(_config.DataHost, $"recording/{stream.Id}.m3u8").ToString()));
+            if (stream.Ends.HasValue)
+            {
+                tags.Add(new("ends", new DateTimeOffset(stream.Ends.Value).ToUnixTimeSeconds()));
+            }
         }
 
         foreach (var tag in user.SplitTags())
@@ -70,7 +73,7 @@ public class StreamEventBuilder
         {
             tags.Add(new("goal", user.Goal));
         }
-        
+
         var ev = new NostrEvent
         {
             Kind = StreamEventKind,
