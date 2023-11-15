@@ -83,7 +83,7 @@ public class NostrStreamManager : IStreamManager
         {
             var chat = _eventBuilder.CreateStreamChat(_context.UserStream,
                 $"Your balance is below {(int)(balanceAlertThreshold / 1000m)} sats, please topup, " +
-                $"or use this link: lnurlp://zap.stream/.well-known/lnurlp/${_context.User.PubKey}");
+                $"or use this link: lnurlp://zap.stream/.well-known/lnurlp/{_context.User.PubKey}");
 
             _eventBuilder.BroadcastEvent(chat);
         }
