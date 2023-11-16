@@ -41,7 +41,7 @@ public class StreamEventBuilder
             new("status", status),
             new("p", user.PubKey, "", "host"),
             new("relays", _config.Relays),
-            new("starts", new DateTimeOffset(stream.Starts).ToUnixTimeSeconds())
+            new("starts", new DateTimeOffset(stream.Starts).ToUnixTimeSeconds().ToString())
         };
 
         if (status == "live")
@@ -60,7 +60,7 @@ public class StreamEventBuilder
             tags.Add(new("recording", new Uri(_config.DataHost, $"recording/{stream.Id}.m3u8").ToString()));
             if (stream.Ends.HasValue)
             {
-                tags.Add(new("ends", new DateTimeOffset(stream.Ends.Value).ToUnixTimeSeconds()));
+                tags.Add(new("ends", new DateTimeOffset(stream.Ends.Value).ToUnixTimeSeconds().ToString()));
             }
         }
 
