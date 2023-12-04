@@ -74,7 +74,10 @@ internal static class Program
         // lnd services
         services.AddSingleton<LndNode>();
         services.AddHostedService<LndInvoicesStream>();
-
+        
+        // game services
+        services.AddSingleton<GameDb>();
+        
         var app = builder.Build();
 
         using (var scope = app.Services.CreateScope())

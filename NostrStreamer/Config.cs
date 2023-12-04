@@ -44,6 +44,14 @@ public class Config
     public string GeoIpDatabase { get; init; } = null!;
     
     public List<EdgeLocation> Edges { get; init; } = new();
+
+    public TwitchApi Twitch { get; init; } = null!;
+}
+
+public class TwitchApi
+{
+    public string ClientId { get; init; } = null!;
+    public string ClientSecret { get; init; } = null!;
 }
 
 public class LndConfig

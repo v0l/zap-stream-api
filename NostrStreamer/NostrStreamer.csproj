@@ -9,6 +9,7 @@
 
     <ItemGroup>
         <Protobuf Include="proto/*.proto" GrpcServices="Client" ProtoRoot="proto" />
+        <Protobuf Include="proto2/games.proto" ProtoRoot="proto2" />
     </ItemGroup>
     <ItemGroup>
       <Content Include="..\.dockerignore">
