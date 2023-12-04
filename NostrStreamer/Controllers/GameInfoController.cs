@@ -16,9 +16,9 @@ public class GameInfoController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetGames([FromQuery] string q, [FromQuery]int limit = 10)
+    public async Task<IActionResult> GetGames([FromQuery] string q, [FromQuery] int limit = 10)
     {
-        var data = await _gameDb.SearchGames(q);
+        var data = await _gameDb.SearchGames(q, limit);
 
         var mapped = data?.Select(a => new GameInfo()
         {
