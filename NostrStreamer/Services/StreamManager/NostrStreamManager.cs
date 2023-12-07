@@ -179,10 +179,11 @@ public class NostrStreamManager : IStreamManager
 
     private async Task UpdateStreamState(UserStreamState state)
     {
+        DateTime? ends = state == UserStreamState.Ended ? DateTime.UtcNow : null;
         _context.UserStream.State = state;
+        _context.UserStream.Ends = ends;
         var ev = _eventBuilder.CreateStreamEvent(_context.User, _context.UserStream);
 
-        DateTime? ends = state == UserStreamState.Ended ? DateTime.UtcNow : null;
         await _context.Db.Streams.Where(a => a.Id == _context.UserStream.Id)
             .ExecuteUpdateAsync(o => o.SetProperty(v => v.State, state)
                 .SetProperty(v => v.Event, JsonConvert.SerializeObject(ev, NostrSerializer.Settings))
