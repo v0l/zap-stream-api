@@ -72,7 +72,12 @@ public class NostrController : Controller
             {
                 Accepted = user.TosAccepted >= _config.TosDate,
                 Link = new Uri(_config.ApiHost, "/tos")
-            }
+            },
+            Forwards = user.Forwards.Select(a => new ForwardDest()
+            {
+                Id = a.Id,
+                Name = a.Name
+            }).ToList()
         };
 
         return Content(JsonConvert.SerializeObject(account, NostrSerializer.Settings), "application/json");
@@ -126,6 +131,34 @@ public class NostrController : Controller
         }
 
         return Accepted();
+    }
+
+    [HttpPost("account/forward")]
+    public async Task<IActionResult> AddForward([FromBody] NewForwardRequest req)
+    {
+        var user = await GetUser();
+        if (user == default)
+        {
+            return NotFound();
+        }
+
+        await _userService.AddForward(user.PubKey, req.Name, req.Target);
+
+        return Accepted();
+    }
+
+    [HttpDelete("account/forward/{id:guid}")]
+    public async Task<IActionResult> DeleteForward([FromRoute] Guid id)
+    {
+        var user = await GetUser();
+        if (user == default)
+        {
+            return NotFound();
+        }
+
+        await _userService.RemoveForward(user.PubKey, id);
+
+        return Ok();
     }
 
     private async Task<User?> GetUser()

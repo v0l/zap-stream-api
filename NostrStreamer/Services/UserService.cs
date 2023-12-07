@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Nostr.Client.Utils;
 using NostrStreamer.ApiModel;
@@ -11,11 +12,13 @@ public class UserService
 {
     private readonly StreamerContext _db;
     private readonly LndNode _lnd;
+    private readonly IDataProtectionProvider _dataProtector;
 
-    public UserService(StreamerContext db, LndNode lnd)
+    public UserService(StreamerContext db, LndNode lnd, IDataProtectionProvider dataProtector)
     {
         _db = db;
         _lnd = lnd;
+        _dataProtector = dataProtector;
     }
 
     /// <summary>
@@ -41,7 +44,7 @@ public class UserService
             Amount = (ulong)user.Balance / 1000,
             PaymentHash = SHA256.HashData(Encoding.UTF8.GetBytes($"{pubkey}-init-credit")).ToHex()
         });
-        
+
         await _db.SaveChangesAsync();
         return user;
     }
@@ -79,6 +82,7 @@ public class UserService
     public async Task<User?> GetUser(string pubkey)
     {
         return await _db.Users.AsNoTracking()
+            .Include(a => a.Forwards)
             .SingleOrDefaultAsync(a => a.PubKey.Equals(pubkey));
     }
 
@@ -88,6 +92,25 @@ public class UserService
             .ExecuteUpdateAsync(o => o.SetProperty(v => v.TosAccepted, DateTime.UtcNow));
 
         if (change != 1) throw new Exception($"Failed to accept TOS, {change} rows updated.");
+    }
+
+    public async Task AddForward(string pubkey, string name, string dest)
+    {
+        var protector = _dataProtector.CreateProtector("forward-targets");
+        _db.Forwards.Add(new()
+        {
+            UserPubkey = pubkey,
+            Name = name,
+            Target = protector.Protect(dest)
+        });
+
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task RemoveForward(string pubkey, Guid id)
+    {
+        await _db.Forwards.Where(a => a.UserPubkey.Equals(pubkey) && a.Id == id)
+            .ExecuteDeleteAsync();
     }
 
     public async Task UpdateStreamInfo(string pubkey, PatchEvent req)

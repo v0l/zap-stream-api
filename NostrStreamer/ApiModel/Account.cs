@@ -12,9 +12,12 @@ public class Account
     
     [JsonProperty("balance")]
     public long Balance { get; init; }
-    
+
     [JsonProperty("tos")]
-    public AccountTos Tos { get; init; }
+    public AccountTos Tos { get; init; } = null!;
+
+    [JsonProperty("forwards")]
+    public List<ForwardDest> Forwards { get; init; } = new();
 }
 
 public class AccountEndpoint
@@ -51,4 +54,13 @@ public class AccountTos
 
     [JsonProperty("link")]
     public Uri Link { get; init; } = null!;
+}
+
+public class ForwardDest
+{
+    [JsonProperty("id")]
+    public Guid Id { get;init; }
+    
+    [JsonProperty("name")]
+    public string Name { get; init; } = null!;
 }

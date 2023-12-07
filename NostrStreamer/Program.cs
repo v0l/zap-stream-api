@@ -2,6 +2,7 @@ using System.Security.Claims;
 using MaxMind.GeoIP2;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Nostr.Client.Client;
 using NostrStreamer.Database;
@@ -51,6 +52,9 @@ internal static class Program
             }, new[] {NostrAuth.Scheme});
         });
 
+        services.AddDataProtection()
+            .PersistKeysToFileSystem(new DirectoryInfo(config.DataProtectionKeyPath));
+
         // nostr services
         services.AddSingleton<NostrMultiWebsocketClient>();
         services.AddSingleton<INostrClient>(s => s.GetRequiredService<NostrMultiWebsocketClient>());
@@ -74,10 +78,10 @@ internal static class Program
         // lnd services
         services.AddSingleton<LndNode>();
         services.AddHostedService<LndInvoicesStream>();
-        
+
         // game services
         services.AddSingleton<GameDb>();
-        
+
         var app = builder.Build();
 
         using (var scope = app.Services.CreateScope())

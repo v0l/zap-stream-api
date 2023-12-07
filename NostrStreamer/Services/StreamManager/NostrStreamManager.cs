@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Nostr.Client.Json;
@@ -13,6 +14,7 @@ public class NostrStreamManager : IStreamManager
     private readonly StreamEventBuilder _eventBuilder;
     private readonly IDvrStore _dvrStore;
     private readonly Config _config;
+    private readonly IDataProtectionProvider _dataProtectionProvider;
 
     public NostrStreamManager(ILogger<NostrStreamManager> logger, StreamManagerContext context, IServiceProvider serviceProvider)
     {
@@ -21,6 +23,7 @@ public class NostrStreamManager : IStreamManager
         _eventBuilder = serviceProvider.GetRequiredService<StreamEventBuilder>();
         _dvrStore = serviceProvider.GetRequiredService<IDvrStore>();
         _config = serviceProvider.GetRequiredService<Config>();
+        _dataProtectionProvider = serviceProvider.GetRequiredService<IDataProtectionProvider>();
     }
 
     public UserStream GetStream()
@@ -44,10 +47,26 @@ public class NostrStreamManager : IStreamManager
     public Task<List<string>> OnForward()
     {
         TestCanStream();
-        return Task.FromResult(new List<string>
+        var fwds = new List<string>
         {
             $"rtmp://127.0.0.1:1935/{_context.UserStream.Endpoint.App}/{_context.User.StreamKey}?vhost={_context.UserStream.Endpoint.Forward}"
-        });
+        };
+
+        var dataProtector = _dataProtectionProvider.CreateProtector("forward-targets");
+        foreach (var f in _context.User.Forwards)
+        {
+            try
+            {
+                var target = dataProtector.Unprotect(f.Target);
+                fwds.Add(target);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to decrypt forward target {id} {msg}", f.Id, ex.Message);
+            }
+        }
+
+        return Task.FromResult(fwds);
     }
 
     public async Task StreamStarted()

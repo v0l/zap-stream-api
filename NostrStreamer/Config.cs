@@ -46,6 +46,8 @@ public class Config
     public List<EdgeLocation> Edges { get; init; } = new();
 
     public TwitchApi Twitch { get; init; } = null!;
+
+    public string DataProtectionKeyPath { get; init; } = null!;
 }
 
 public class TwitchApi

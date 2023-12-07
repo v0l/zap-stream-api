@@ -27,6 +27,7 @@ public class StreamManagerFactory
     {
         var user = await _db.Users
             .AsNoTracking()
+            .Include(a => a.Forwards)
             .SingleOrDefaultAsync(a => a.StreamKey.Equals(info.StreamKey));
 
         if (user == default) throw new Exception("No user found");
