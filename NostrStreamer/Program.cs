@@ -8,6 +8,7 @@ using Nostr.Client.Client;
 using NostrStreamer.Database;
 using NostrStreamer.Services;
 using NostrStreamer.Services.Background;
+using NostrStreamer.Services.Clips;
 using NostrStreamer.Services.Dvr;
 using NostrStreamer.Services.StreamManager;
 using NostrStreamer.Services.Thumbnail;
@@ -71,9 +72,12 @@ internal static class Program
         services.AddTransient<StreamManagerFactory>();
         services.AddTransient<UserService>();
 
+        // dvr services
+        services.AddTransient<IDvrStore, S3DvrStore>();
+        
+        // thumbnail services
         services.AddTransient<IThumbnailService, S3ThumbnailService>();
         services.AddHostedService<ThumbnailGenerator>();
-        services.AddTransient<IDvrStore, S3DvrStore>();
 
         // lnd services
         services.AddSingleton<LndNode>();
@@ -82,6 +86,10 @@ internal static class Program
         // game services
         services.AddSingleton<GameDb>();
 
+        // clip services
+        services.AddTransient<ClipGenerator>();
+        services.AddTransient<IClipService, S3ClipService>();
+        
         var app = builder.Build();
 
         using (var scope = app.Services.CreateScope())

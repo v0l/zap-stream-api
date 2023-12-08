@@ -8,11 +8,12 @@ using Nostr.Client.Json;
 using NostrStreamer.ApiModel;
 using NostrStreamer.Database;
 using NostrStreamer.Services;
+using NostrStreamer.Services.Clips;
 using NostrStreamer.Services.StreamManager;
 
 namespace NostrStreamer.Controllers;
 
-[Authorize]
+[Authorize(AuthenticationSchemes = NostrAuth.Scheme)]
 [EnableCors]
 [Route("/api/nostr")]
 public class NostrController : Controller
@@ -21,13 +22,16 @@ public class NostrController : Controller
     private readonly Config _config;
     private readonly StreamManagerFactory _streamManagerFactory;
     private readonly UserService _userService;
+    private readonly IClipService _clipService;
 
-    public NostrController(StreamerContext db, Config config, StreamManagerFactory streamManager, UserService userService)
+    public NostrController(StreamerContext db, Config config, StreamManagerFactory streamManager, UserService userService,
+        IClipService clipService)
     {
         _db = db;
         _config = config;
         _streamManagerFactory = streamManager;
         _userService = userService;
+        _clipService = clipService;
     }
 
     [HttpGet("account")]
@@ -159,6 +163,19 @@ public class NostrController : Controller
         await _userService.RemoveForward(user.PubKey, id);
 
         return Ok();
+    }
+
+    [HttpPost("clip/{id:guid}")]
+    public async Task<IActionResult> CreateClip([FromRoute] Guid id)
+    {
+        var pk = GetPubKey();
+        var clip = await _clipService.CreateClip(id, pk);
+        if (clip == default) return StatusCode(500);
+
+        return Json(new
+        {
+            url = clip.Url
+        });
     }
 
     private async Task<User?> GetUser()

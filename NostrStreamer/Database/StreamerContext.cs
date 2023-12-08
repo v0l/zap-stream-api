@@ -31,4 +31,6 @@ public class StreamerContext : DbContext
     public DbSet<UserStreamRecording> Recordings => Set<UserStreamRecording>();
 
     public DbSet<UserStreamForwards> Forwards => Set<UserStreamForwards>();
+
+    public DbSet<UserStreamClip> Clips => Set<UserStreamClip>();
 }

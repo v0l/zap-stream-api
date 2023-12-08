@@ -41,7 +41,8 @@ public class StreamEventBuilder
             new("status", status),
             new("p", user.PubKey, "", "host"),
             new("relays", _config.Relays),
-            new("starts", new DateTimeOffset(stream.Starts).ToUnixTimeSeconds().ToString())
+            new("starts", new DateTimeOffset(stream.Starts).ToUnixTimeSeconds().ToString()),
+            new("service", new Uri(_config.ApiHost, "/api/nostr").ToString())
         };
 
         if (status == "live")
