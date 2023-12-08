@@ -62,7 +62,7 @@ public class NostrAuthHandler : AuthenticationHandler<NostrAuthOptions>
         }
 
         var diffTime = Math.Abs((ev.CreatedAt!.Value - DateTime.UtcNow).TotalSeconds);
-        if (diffTime > 60d)
+        if (diffTime > 120d)
         {
             return AuthenticateResult.Fail("Invalid nostr event, timestamp out of range");
         }
