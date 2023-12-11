@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using FFMpegCore;
+using NostrStreamer.Database;
 
 namespace NostrStreamer.Services.Clips;
 
@@ -30,12 +31,13 @@ public class ClipGenerator
         return path;
     }
 
-    public async Task<List<ClipSegment>> GetClipSegments(Guid id)
+    public async Task<List<ClipSegment>> GetClipSegments(UserStream stream)
     {
         var ret = new List<ClipSegment>();
-        var playlist = new Uri(_config.DataHost, $"stream/{id}.m3u8");
+        var path = $"/{stream.Endpoint.App}/source/{stream.User.StreamKey}.m3u8";
+        var ub = new Uri(_config.SrsHttpHost, path);
 
-        var rsp = await _client.GetStreamAsync(playlist);
+        var rsp = await _client.GetStreamAsync(ub);
         using var sr = new StreamReader(rsp);
         while (await sr.ReadLineAsync() is { } line)
         {
@@ -44,7 +46,7 @@ public class ClipGenerator
                 var trackPath = await sr.ReadLineAsync();
                 var seg = Regex.Match(trackPath!, @"-(\d+)\.ts");
                 var idx = int.Parse(seg.Groups[1].Value);
-                var clipSeg = new ClipSegment(id, idx);
+                var clipSeg = new ClipSegment(stream.Id, idx);
                 var outPath = clipSeg.GetPath();
                 if (!File.Exists(outPath))
                 {

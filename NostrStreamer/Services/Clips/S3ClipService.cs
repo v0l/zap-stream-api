@@ -32,7 +32,7 @@ public class S3ClipService : IClipService
             return default;
         }
 
-        return await _generator.GetClipSegments(streamId);
+        return await _generator.GetClipSegments(stream);
     }
 
     public async Task<ClipResult?> MakeClip(string takenBy, List<ClipSegment> segments, float start, float length)
