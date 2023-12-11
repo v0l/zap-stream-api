@@ -95,7 +95,7 @@ public class StreamEventBuilder
             Content = message,
             CreatedAt = DateTime.Now,
             Tags = new NostrEventTags(
-                new NostrEventTag("a", $"{StreamEventKind}:{pk.DerivePublicKey().Hex}:{stream.Id}")
+                new NostrEventTag("a", $"{(int)StreamEventKind}:{pk.DerivePublicKey().Hex}:{stream.Id}")
             )
         };
 
