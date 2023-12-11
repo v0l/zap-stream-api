@@ -20,7 +20,7 @@ public class S3ClipService : IClipService
         _context = context;
     }
 
-    public async Task<ClipResult?> CreateClip(Guid streamId, string takenBy)
+    public async Task<List<ClipSegment>?> PrepareClip(Guid streamId)
     {
         var stream = await _context.Streams
             .Include(a => a.User)
@@ -32,12 +32,19 @@ public class S3ClipService : IClipService
             return default;
         }
 
-        var tmpClip = await _generator.GenerateClip(stream);
+        return await _generator.GetClipSegments(streamId);
+    }
 
+    public async Task<ClipResult?> MakeClip(string takenBy, List<ClipSegment> segments, float start, float length)
+    {
+        if (segments.Count == 0) return default;
+
+        var streamId = segments.First().Id;
+        var clip = await _generator.CreateClipFromSegments(segments, start, length);
         var clipId = Guid.NewGuid();
-        var s3Path = $"{stream.Id}/clips/{clipId}.mp4";
+        var s3Path = $"{streamId}/clips/{clipId}.mp4";
 
-        await using var fs = new FileStream(tmpClip, FileMode.Open, FileAccess.Read);
+        await using var fs = new FileStream(clip, FileMode.Open, FileAccess.Read);
         await _client.PutObjectAsync(new()
         {
             BucketName = _config.S3Store.BucketName,
@@ -67,7 +74,7 @@ public class S3ClipService : IClipService
         var clipObj = new UserStreamClip()
         {
             Id = clipId,
-            UserStreamId = stream.Id,
+            UserStreamId = streamId,
             TakenByPubkey = takenBy,
             Url = ub.Uri.ToString()
         };

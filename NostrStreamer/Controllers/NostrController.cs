@@ -165,17 +165,46 @@ public class NostrController : Controller
         return Ok();
     }
 
+    [HttpGet("clip/{id:guid}")]
+    public async Task<IActionResult> GetClipSegments([FromRoute] Guid id)
+    {
+        var clip = await _clipService.PrepareClip(id);
+        if (clip == default) return StatusCode(500);
+
+        return Json(new
+        {
+            id,
+            segments = clip.Select(a => new
+            {
+                idx = a.Index
+            })
+        });
+    }
+
     [HttpPost("clip/{id:guid}")]
-    public async Task<IActionResult> CreateClip([FromRoute] Guid id)
+    public async Task<IActionResult> MakeClip([FromRoute] Guid id, [FromBody] MakeClipReq req)
     {
         var pk = GetPubKey();
-        var clip = await _clipService.CreateClip(id, pk);
+        var clip = await _clipService.MakeClip(pk, req.Segments.Select(a => new ClipSegment(id, a)).ToList(), req.Start, req.Length);
         if (clip == default) return StatusCode(500);
 
         return Json(new
         {
             url = clip.Url
         });
+    }
+
+    [HttpGet("clip/{id:guid}/{idx:int}.ts")]
+    public async Task<IActionResult> GetClipSegment([FromRoute] Guid id, [FromRoute] int idx)
+    {
+        var seg = new ClipSegment(id, idx);
+        if (!System.IO.File.Exists(seg.GetPath()))
+        {
+            return NotFound();
+        }
+
+        await using var fs = new FileStream(seg.GetPath(), FileMode.Open, FileAccess.Read);
+        return File(fs, "video/mp2t");
     }
 
     private async Task<User?> GetUser()
