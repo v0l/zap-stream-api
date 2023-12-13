@@ -15,12 +15,11 @@ public class S3ClipService : IClipService
     {
         _generator = generator;
         _client = config.S3Store.CreateClient();
-        ;
         _config = config;
         _context = context;
     }
 
-    public async Task<List<ClipSegment>?> PrepareClip(Guid streamId)
+    public async Task<TempClip?> PrepareClip(Guid streamId)
     {
         var stream = await _context.Streams
             .Include(a => a.User)
@@ -32,16 +31,18 @@ public class S3ClipService : IClipService
             return default;
         }
 
-        return await _generator.GetClipSegments(stream);
+        var segments = await _generator.GetClipSegments(stream);
+        var clip = await _generator.CreateClipFromSegments(segments);
+        if (string.IsNullOrEmpty(clip)) return default;
+
+        var ret = new TempClip(streamId, Guid.NewGuid(), segments.Sum(a => a.Length));
+        File.Move(clip, ret.GetPath());
+        return ret;
     }
 
-    public async Task<ClipResult?> MakeClip(string takenBy, List<ClipSegment> segments, float start, float length)
+    public async Task<ClipResult?> MakeClip(string takenBy, Guid streamId, Guid clipId, float start, float length)
     {
-        if (segments.Count == 0) return default;
-
-        var streamId = segments.First().Id;
-        var clip = await _generator.CreateClipFromSegments(segments, start, length);
-        var clipId = Guid.NewGuid();
+        var clip = await _generator.SliceTempClip(new(streamId, clipId, 0), start, length);
         var s3Path = $"{streamId}/clips/{clipId}.mp4";
 
         await using var fs = new FileStream(clip, FileMode.Open, FileAccess.Read);
@@ -82,6 +83,6 @@ public class S3ClipService : IClipService
         _context.Clips.Add(clipObj);
         await _context.SaveChangesAsync();
 
-        return new(ub.Uri);
+        return new(ub.Uri, length);
     }
 }

@@ -173,19 +173,17 @@ public class NostrController : Controller
 
         return Json(new
         {
-            id,
-            segments = clip.Select(a => new
-            {
-                idx = a.Index
-            })
+            id = clip.Id,
+            length = clip.Length
         });
     }
 
-    [HttpPost("clip/{id:guid}")]
-    public async Task<IActionResult> MakeClip([FromRoute] Guid id, [FromBody] MakeClipReq req)
+    [HttpPost("clip/{streamId:guid}/{tempClipId:guid}")]
+    public async Task<IActionResult> MakeClip([FromRoute] Guid streamId, [FromRoute] Guid tempClipId, [FromQuery] float start,
+        [FromQuery] float length)
     {
         var pk = GetPubKey();
-        var clip = await _clipService.MakeClip(pk, req.Segments.Select(a => new ClipSegment(id, a)).ToList(), req.Start, req.Length);
+        var clip = await _clipService.MakeClip(pk, streamId, tempClipId, start, length);
         if (clip == default) return StatusCode(500);
 
         return Json(new
@@ -194,17 +192,18 @@ public class NostrController : Controller
         });
     }
 
-    [HttpGet("clip/{id:guid}/{idx:int}.ts")]
-    public async Task<IActionResult> GetClipSegment([FromRoute] Guid id, [FromRoute] int idx)
+    [AllowAnonymous]
+    [HttpGet("clip/{streamId:guid}/{clipId:guid}")]
+    public IActionResult GetClipSegment([FromRoute] Guid streamId, [FromRoute] Guid clipId)
     {
-        var seg = new ClipSegment(id, idx);
+        var seg = new TempClip(streamId, clipId, 0);
         if (!System.IO.File.Exists(seg.GetPath()))
         {
             return NotFound();
         }
 
-        await using var fs = new FileStream(seg.GetPath(), FileMode.Open, FileAccess.Read);
-        return File(fs, "video/mp2t");
+        var fs = new FileStream(seg.GetPath(), FileMode.Open, FileAccess.Read);
+        return File(fs, "video/mp4", enableRangeProcessing: true);
     }
 
     private async Task<User?> GetUser()
