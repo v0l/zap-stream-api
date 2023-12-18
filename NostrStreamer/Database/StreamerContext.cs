@@ -33,4 +33,8 @@ public class StreamerContext : DbContext
     public DbSet<UserStreamForwards> Forwards => Set<UserStreamForwards>();
 
     public DbSet<UserStreamClip> Clips => Set<UserStreamClip>();
+
+    public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
+
+    public DbSet<PushSubscriptionTarget> PushSubscriptionTargets => Set<PushSubscriptionTarget>();
 }

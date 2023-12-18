@@ -91,6 +91,17 @@ public static class Extensions
 
         return 6376500.0 * (2.0 * Math.Atan2(Math.Sqrt(d3), Math.Sqrt(1.0 - d3)));
     }
+
+    public static string GetHost(this NostrEvent ev)
+    {
+        var hostTag = ev.Tags!.FirstOrDefault(a => a.TagIdentifier == "p" && a.AdditionalData[2] == "host")?.AdditionalData[0];
+        if (!string.IsNullOrEmpty(hostTag))
+        {
+            return hostTag;
+        }
+
+        return ev.Pubkey!;
+    }
 }
 
 public class Variant

@@ -5,11 +5,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Nostr.Client.Json;
+using Nostr.Client.Messages;
 using NostrStreamer.ApiModel;
 using NostrStreamer.Database;
 using NostrStreamer.Services;
 using NostrStreamer.Services.Clips;
 using NostrStreamer.Services.StreamManager;
+using WebPush;
 
 namespace NostrStreamer.Controllers;
 
@@ -23,15 +25,19 @@ public class NostrController : Controller
     private readonly StreamManagerFactory _streamManagerFactory;
     private readonly UserService _userService;
     private readonly IClipService _clipService;
+    private readonly ILogger<NostrController> _logger;
+    private readonly PushSender _pushSender;
 
     public NostrController(StreamerContext db, Config config, StreamManagerFactory streamManager, UserService userService,
-        IClipService clipService)
+        IClipService clipService, ILogger<NostrController> logger, PushSender pushSender)
     {
         _db = db;
         _config = config;
         _streamManagerFactory = streamManager;
         _userService = userService;
         _clipService = clipService;
+        _logger = logger;
+        _pushSender = pushSender;
     }
 
     [HttpGet("account")]
@@ -204,6 +210,145 @@ public class NostrController : Controller
 
         var fs = new FileStream(seg.GetPath(), FileMode.Open, FileAccess.Read);
         return File(fs, "video/mp4", enableRangeProcessing: true);
+    }
+
+    [HttpGet("notifications/info")]
+    [AllowAnonymous]
+    public IActionResult GetInfo()
+    {
+        return Json(new
+        {
+            publicKey = _config.VapidKey.PublicKey
+        });
+    }
+
+#if DEBUG
+    [HttpGet("notifications/generate-keys")]
+    [AllowAnonymous]
+    public IActionResult GenerateKeys()
+    {
+        var vapidKeys = VapidHelper.GenerateVapidKeys();
+
+        return Json(new
+        {
+            publicKey = vapidKeys.PublicKey,
+            privateKey = vapidKeys.PrivateKey
+        });
+    }
+
+    [HttpPost("notifications/test")]
+    [AllowAnonymous]
+    public void TestNotification([FromBody] NostrEvent ev)
+    {
+        _pushSender.Add(ev);
+    }
+
+#endif
+
+    [HttpPost("notifications/register")]
+    public async Task<IActionResult> Register([FromBody] PushSubscriptionRequest sub)
+    {
+        if (string.IsNullOrEmpty(sub.Endpoint) || string.IsNullOrEmpty(sub.Auth) || string.IsNullOrEmpty(sub.Key))
+            return BadRequest();
+
+        var pubkey = GetPubKey();
+        if (string.IsNullOrEmpty(pubkey))
+            return BadRequest();
+
+        var count = await _db.PushSubscriptions.CountAsync(a => a.Pubkey == pubkey);
+        if (count >= 5)
+            return Json(new
+            {
+                error = "Too many active subscriptions"
+            });
+
+        var existing = await _db.PushSubscriptions.FirstOrDefaultAsync(a => a.Key == sub.Key);
+        if (existing != default)
+        {
+            return Json(new {id = existing.Id});
+        }
+
+        var newId = Guid.NewGuid();
+        _db.PushSubscriptions.Add(new()
+        {
+            Id = newId,
+            Pubkey = pubkey,
+            Endpoint = sub.Endpoint,
+            Key = sub.Key,
+            Auth = sub.Auth,
+            Scope = sub.Scope
+        });
+
+        await _db.SaveChangesAsync();
+        _logger.LogInformation("{pubkey} registered for notifications", pubkey);
+        return Json(new
+        {
+            id = newId
+        });
+    }
+
+    [HttpGet("notifications")]
+    public async Task<IActionResult> ListNotifications([FromQuery] string auth)
+    {
+        var userPubkey = GetPubKey();
+        if (string.IsNullOrEmpty(userPubkey))
+            return BadRequest();
+
+        var sub = await _db.PushSubscriptionTargets
+            .Join(_db.PushSubscriptions, a => a.SubscriberPubkey, b => b.Pubkey,
+                (a, b) => new {a.SubscriberPubkey, a.TargetPubkey, b.Auth})
+            .Where(a => a.SubscriberPubkey == userPubkey && a.Auth == auth)
+            .Select(a => a.TargetPubkey)
+            .ToListAsync();
+
+        return Json(sub);
+    }
+
+    [HttpPatch("notifications")]
+    public async Task<IActionResult> RegisterForStreamer([FromQuery] string pubkey)
+    {
+        if (string.IsNullOrEmpty(pubkey)) return BadRequest();
+
+        var userPubkey = GetPubKey();
+        if (string.IsNullOrEmpty(userPubkey))
+            return BadRequest();
+
+        var sub = await _db.PushSubscriptionTargets
+            .CountAsync(a => a.SubscriberPubkey == userPubkey && a.TargetPubkey == pubkey);
+
+        if (sub > 0) return Ok();
+
+        _db.PushSubscriptionTargets.Add(new()
+        {
+            SubscriberPubkey = userPubkey,
+            TargetPubkey = pubkey
+        });
+
+        await _db.SaveChangesAsync();
+
+        return Accepted();
+    }
+
+    [HttpDelete("notifications")]
+    public async Task<IActionResult> UnregisterForStreamer([FromQuery] string pubkey)
+    {
+        if (string.IsNullOrEmpty(pubkey)) return BadRequest();
+
+        var userPubkey = GetPubKey();
+        if (string.IsNullOrEmpty(userPubkey))
+            return BadRequest();
+
+        var sub = await _db.PushSubscriptionTargets
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.SubscriberPubkey == userPubkey && a.TargetPubkey == pubkey);
+
+        if (sub == default) return NotFound();
+
+        await _db.PushSubscriptionTargets
+            .Where(a => a.Id == sub.Id)
+            .ExecuteDeleteAsync();
+
+        return Accepted();
     }
 
     private async Task<User?> GetUser()

@@ -48,6 +48,18 @@ public class Config
     public TwitchApi Twitch { get; init; } = null!;
 
     public string DataProtectionKeyPath { get; init; } = null!;
+
+    public VapidKeyDetails VapidKey { get; init; } = null!;
+
+    public string Redis { get; init; } = null!;
+
+    public Uri SnortApi { get; init; } = null!;
+}
+
+public class VapidKeyDetails
+{
+    public string PublicKey { get; init; } = null!;
+    public string PrivateKey { get; init; } = null!;
 }
 
 public class TwitchApi

@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
 using Nostr.Client.Client;
 using NostrStreamer.Database;
 using NostrStreamer.Services;
@@ -13,11 +16,26 @@ using NostrStreamer.Services.Dvr;
 using NostrStreamer.Services.StreamManager;
 using NostrStreamer.Services.Thumbnail;
 using Prometheus;
+using StackExchange.Redis;
 
 namespace NostrStreamer;
 
 internal static class Program
 {
+    private static void ConfigureSerializer(JsonSerializerSettings s)
+    {
+        s.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+        s.Formatting = Formatting.None;
+        s.NullValueHandling = NullValueHandling.Ignore;
+        s.ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor;
+        s.Converters = new List<JsonConverter>()
+        {
+            new UnixDateTimeConverter()
+        };
+
+        s.ContractResolver = new CamelCasePropertyNamesContractResolver();
+    }
+
     public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
@@ -30,8 +48,15 @@ internal static class Program
         services.AddMemoryCache();
         services.AddHttpClient();
         services.AddRazorPages();
-        services.AddControllers().AddNewtonsoftJson();
+        services.AddControllers().AddNewtonsoftJson(opt => { ConfigureSerializer(opt.SerializerSettings); });
+
+        services.AddSwaggerGen();
         services.AddSingleton(config);
+
+        // Redis
+        var cx = await ConnectionMultiplexer.ConnectAsync(config.Redis);
+        services.AddSingleton(cx);
+        services.AddTransient<IDatabase>(svc => svc.GetRequiredService<ConnectionMultiplexer>().GetDatabase());
 
         // GeoIP
         services.AddSingleton<IGeoIP2DatabaseReader>(_ => new DatabaseReader(config.GeoIpDatabase));
@@ -74,7 +99,7 @@ internal static class Program
 
         // dvr services
         services.AddTransient<IDvrStore, S3DvrStore>();
-        
+
         // thumbnail services
         services.AddTransient<IThumbnailService, S3ThumbnailService>();
         services.AddHostedService<ThumbnailGenerator>();
@@ -89,6 +114,14 @@ internal static class Program
         // clip services
         services.AddTransient<ClipGenerator>();
         services.AddTransient<IClipService, S3ClipService>();
+
+        // notifications services
+        services.AddSingleton<PushSender>();
+        services.AddHostedService<PushSenderService>();
+        services.AddHostedService<EventStream>();
+        
+        // snort api
+        services.AddTransient<SnortApi>();
         
         var app = builder.Build();
 
@@ -106,6 +139,8 @@ internal static class Program
         app.MapRazorPages();
         app.MapControllers();
         app.MapMetrics();
+        app.UseSwagger();
+        app.UseSwaggerUI();
 
         await app.RunAsync();
     }
