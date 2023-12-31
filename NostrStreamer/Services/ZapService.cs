@@ -34,9 +34,10 @@ public class ZapService
 
             var key = _config.GetPrivateKey();
             var pubKey = key.DerivePublicKey().Hex;
-            var tags = zapNote.Tags!.Where(a => a.TagIdentifier?.Length == 1).ToList();
+            var tags = zapNote.Tags!.Where(a => a.TagIdentifier.Length == 1).ToList();
             tags.Add(new("bolt11", pr));
             tags.Add(new("description", zapRequest));
+            tags.Add(new("P", zapNote.Pubkey!));
 
             var zapReceipt = new NostrEvent()
             {
