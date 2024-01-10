@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
-using Nostr.Client.Identifiers;
 using Nostr.Client.Json;
 using Nostr.Client.Messages;
 using Nostr.Client.Utils;
@@ -81,7 +80,7 @@ public class NostrStreamManager : IStreamManager
         _logger.LogInformation("Stream started for: {pubkey}", _context.User.PubKey);
         TestCanStream();
 
-        await UpdateStreamState(UserStreamState.Live);
+        var ev = await UpdateStreamState(UserStreamState.Live);
 
         if (_config.DiscordLiveWebhook != default)
         {
@@ -89,7 +88,7 @@ public class NostrStreamManager : IStreamManager
             {
                 var profile = await _snortApi.Profile(_context.User.PubKey);
                 var name = profile?.Name ?? NostrConverter.ToBech32(_context.User.PubKey, "npub");
-                var id = new NostrAddressIdentifier(_context.UserStream.Id.ToString(), _context.User.PubKey, null, NostrKind.LiveEvent);
+                var id = ev.ToIdentifier();
                 await _webhook.SendMessage(_config.DiscordLiveWebhook, $"{name} went live!\nhttps://zap.stream/{id.ToBech32()}");
             }
             catch (Exception ex)

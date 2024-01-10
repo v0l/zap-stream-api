@@ -3,6 +3,7 @@ using Amazon.Runtime;
 using Amazon.S3;
 using MaxMind.GeoIP2;
 using Newtonsoft.Json;
+using Nostr.Client.Identifiers;
 using Nostr.Client.Json;
 using Nostr.Client.Keys;
 using Nostr.Client.Messages;
@@ -102,6 +103,16 @@ public static class Extensions
 
         return ev.Pubkey!;
     }
+    
+    public static NostrIdentifier ToIdentifier(this NostrEvent ev)
+    {
+        if ((long)ev.Kind is >= 30_000 and < 40_000)
+        {
+            return new NostrAddressIdentifier(ev.Tags!.FindFirstTagValue("d")!, ev.Pubkey!, null, ev.Kind);
+        }
+
+        return new NostrEventIdentifier(ev.Id!, ev.Pubkey, null, ev.Kind);
+    } 
 }
 
 public class Variant
