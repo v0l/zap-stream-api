@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using Nostr.Client.Identifiers;
 using Nostr.Client.Json;
+using Nostr.Client.Messages;
+using Nostr.Client.Utils;
 using NostrStreamer.Database;
 using NostrStreamer.Services.Dvr;
 
@@ -14,6 +17,8 @@ public class NostrStreamManager : IStreamManager
     private readonly StreamEventBuilder _eventBuilder;
     private readonly IDvrStore _dvrStore;
     private readonly Config _config;
+    private readonly DiscordWebhook _webhook;
+    private readonly SnortApi _snortApi;
     private readonly IDataProtectionProvider _dataProtectionProvider;
 
     public NostrStreamManager(ILogger<NostrStreamManager> logger, StreamManagerContext context, IServiceProvider serviceProvider)
@@ -24,6 +29,8 @@ public class NostrStreamManager : IStreamManager
         _dvrStore = serviceProvider.GetRequiredService<IDvrStore>();
         _config = serviceProvider.GetRequiredService<Config>();
         _dataProtectionProvider = serviceProvider.GetRequiredService<IDataProtectionProvider>();
+        _webhook = serviceProvider.GetRequiredService<DiscordWebhook>();
+        _snortApi = serviceProvider.GetRequiredService<SnortApi>();
     }
 
     public UserStream GetStream()
@@ -75,6 +82,21 @@ public class NostrStreamManager : IStreamManager
         TestCanStream();
 
         await UpdateStreamState(UserStreamState.Live);
+
+        if (_config.DiscordLiveWebhook != default)
+        {
+            try
+            {
+                var profile = await _snortApi.Profile(_context.User.PubKey);
+                var name = profile?.Name ?? NostrConverter.ToBech32(_context.User.PubKey, "npub");
+                var id = new NostrAddressIdentifier(_context.UserStream.Id.ToString(), _context.User.PubKey, null, NostrKind.LiveEvent);
+                await _webhook.SendMessage(_config.DiscordLiveWebhook, $"{name} went live!\nhttps://zap.stream/{id.ToBech32()}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Failed to send notification {msg}", ex.Message);
+            }
+        }
     }
 
     public async Task StreamStopped()
@@ -196,7 +218,7 @@ public class NostrStreamManager : IStreamManager
         }
     }
 
-    private async Task UpdateStreamState(UserStreamState state)
+    private async Task<NostrEvent> UpdateStreamState(UserStreamState state)
     {
         DateTime? ends = state == UserStreamState.Ended ? DateTime.UtcNow : null;
         _context.UserStream.State = state;
@@ -209,5 +231,6 @@ public class NostrStreamManager : IStreamManager
                 .SetProperty(v => v.Ends, ends));
 
         _eventBuilder.BroadcastEvent(ev);
+        return ev;
     }
 }

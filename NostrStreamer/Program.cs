@@ -120,6 +120,9 @@ internal static class Program
         services.AddHostedService<PushSenderService>();
         services.AddHostedService<EventStream>();
         
+        // webhooks
+        services.AddTransient<DiscordWebhook>();
+        
         // snort api
         services.AddTransient<SnortApi>();
         

@@ -54,6 +54,8 @@ public class Config
     public string Redis { get; init; } = null!;
 
     public Uri SnortApi { get; init; } = null!;
+    
+    public Uri? DiscordLiveWebhook { get; init; }
 }
 
 public class VapidKeyDetails
