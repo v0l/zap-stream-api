@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using Nostr.Client.Client;
+using NostrServices.Client;
 using NostrStreamer.Database;
 using NostrStreamer.Services;
 using NostrStreamer.Services.Background;
@@ -43,6 +44,11 @@ internal static class Program
         var services = builder.Services;
         var config = builder.Configuration.GetSection("Config").Get<Config>();
 
+        if (config == default)
+        {
+            throw new Exception("Config is missing!");
+        }
+
         ConfigureDb(services, builder.Configuration);
         services.AddCors();
         services.AddMemoryCache();
@@ -75,7 +81,7 @@ internal static class Program
             o.DefaultPolicy = new AuthorizationPolicy(new[]
             {
                 new ClaimsAuthorizationRequirement(ClaimTypes.Name, null)
-            }, new[] {NostrAuth.Scheme});
+            }, new[] { NostrAuth.Scheme });
         });
 
         services.AddDataProtection()
@@ -119,13 +125,13 @@ internal static class Program
         services.AddSingleton<PushSender>();
         services.AddHostedService<PushSenderService>();
         services.AddHostedService<EventStream>();
-        
+
         // webhooks
         services.AddTransient<DiscordWebhook>();
-        
+
         // snort api
-        services.AddTransient<SnortApi>();
-        
+        services.AddTransient<NostrServicesClient>();
+
         var app = builder.Build();
 
         using (var scope = app.Services.CreateScope())

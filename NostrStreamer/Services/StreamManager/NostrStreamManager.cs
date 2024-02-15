@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using Nostr.Client.Json;
 using Nostr.Client.Messages;
 using Nostr.Client.Utils;
+using NostrServices.Client;
 using NostrStreamer.Database;
 using NostrStreamer.Services.Dvr;
 
@@ -17,7 +18,7 @@ public class NostrStreamManager : IStreamManager
     private readonly IDvrStore _dvrStore;
     private readonly Config _config;
     private readonly DiscordWebhook _webhook;
-    private readonly SnortApi _snortApi;
+    private readonly NostrServicesClient _nostrApi;
     private readonly IDataProtectionProvider _dataProtectionProvider;
 
     public NostrStreamManager(ILogger<NostrStreamManager> logger, StreamManagerContext context, IServiceProvider serviceProvider)
@@ -29,7 +30,7 @@ public class NostrStreamManager : IStreamManager
         _config = serviceProvider.GetRequiredService<Config>();
         _dataProtectionProvider = serviceProvider.GetRequiredService<IDataProtectionProvider>();
         _webhook = serviceProvider.GetRequiredService<DiscordWebhook>();
-        _snortApi = serviceProvider.GetRequiredService<SnortApi>();
+        _nostrApi = serviceProvider.GetRequiredService<NostrServicesClient>();
     }
 
     public UserStream GetStream()
@@ -86,7 +87,7 @@ public class NostrStreamManager : IStreamManager
         {
             try
             {
-                var profile = await _snortApi.Profile(_context.User.PubKey);
+                var profile = await _nostrApi.Profile(_context.User.PubKey);
                 var name = profile?.Name ?? NostrConverter.ToBech32(_context.User.PubKey, "npub");
                 var id = ev.ToIdentifier();
                 await _webhook.SendMessage(_config.DiscordLiveWebhook, $"{name} went live!\nhttps://zap.stream/{id.ToBech32()}");

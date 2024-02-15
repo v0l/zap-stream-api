@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Nostr.Client.Json;
 using Nostr.Client.Messages;
+using NostrServices.Client;
 using NostrStreamer.ApiModel;
 using NostrStreamer.Database;
 using StackExchange.Redis;
@@ -37,17 +38,17 @@ public class PushSenderService : BackgroundService
     private readonly ILogger<PushSenderService> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IDatabase _redis;
-    private readonly SnortApi _snort;
+    private readonly NostrServicesClient _nostrApi;
 
     public PushSenderService(PushSender sender, HttpClient client, Config config, IServiceScopeFactory scopeFactory,
-        ILogger<PushSenderService> logger, SnortApi snort, IDatabase redis)
+        ILogger<PushSenderService> logger, NostrServicesClient snort, IDatabase redis)
     {
         _sender = sender;
         _client = client;
         _config = config;
         _scopeFactory = scopeFactory;
         _logger = logger;
-        _snort = snort;
+        _nostrApi = snort;
         _redis = redis;
     }
 
@@ -121,7 +122,7 @@ public class PushSenderService : BackgroundService
         await _redis.StringSetAsync(key, ev.Id!, TimeSpan.FromDays(7));
 
         var host = ev.GetHost();
-        var profile = await _snort.Profile(host);
+        var profile = await _nostrApi.Profile(host);
         return new PushMessage
         {
             Type = PushMessageType.StreamStarted,
