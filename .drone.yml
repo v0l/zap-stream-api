@@ -8,12 +8,14 @@ metadata:
 
 steps:
   - name: build
-    image: r.j3ss.co/img
+    image: docker
     privileged: true
     environment: 
       TOKEN:
         from_secret: registry_token
     commands:
-      - img login -u registry -p $TOKEN registry.v0l.io
-      - img build -t registry.v0l.io/zap-stream-api:latest -f NostrStreamer/Dockerfile .
-      - img push registry.v0l.io/zap-stream-api:latest
+      - dockerd &
+      - docker login -u registry -p $TOKEN registry.v0l.io
+      - docker build -t registry.v0l.io/zap-stream-api:latest -f NostrStreamer/Dockerfile .
+      - docker push registry.v0l.io/zap-stream-api:latest
+      - kill $(cat /var/run/docker.pid)
