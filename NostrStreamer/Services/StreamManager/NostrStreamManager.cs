@@ -115,14 +115,25 @@ public class NostrStreamManager : IStreamManager
         var cost = (long)Math.Ceiling(_context.UserStream.Endpoint.Cost * (duration / 60d));
         if (cost > 0)
         {
-            await _context.Db.Users
-                .Where(a => a.PubKey == _context.User.PubKey)
-                .ExecuteUpdateAsync(o =>
-                    o.SetProperty(v => v.Balance, v => v.Balance - cost));
-            await _context.Db.Streams
-                .Where(a => a.Id == _context.UserStream.Id)
-                .ExecuteUpdateAsync(o =>
-                    o.SetProperty(v => v.MilliSatsCollected, v => v.MilliSatsCollected + cost));
+            await using var tx = await _context.Db.Database.BeginTransactionAsync();
+            try
+            {
+                await _context.Db.Users
+                    .Where(a => a.PubKey == _context.User.PubKey)
+                    .ExecuteUpdateAsync(o =>
+                        o.SetProperty(v => v.Balance, v => v.Balance - cost));
+                await _context.Db.Streams
+                    .Where(a => a.Id == _context.UserStream.Id)
+                    .ExecuteUpdateAsync(o =>
+                        o.SetProperty(v => v.MilliSatsCollected, v => v.MilliSatsCollected + cost)
+                            .SetProperty(v => v.Length, v => v.Length + (decimal)duration));
+                await tx.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync();
+                _logger.LogError(ex, "Balance update failed {msg}", ex.Message);
+            }
         }
 
         _logger.LogInformation("Stream produced {n} seconds for {pubkey} costing {cost:#,##0} milli-sats", duration,

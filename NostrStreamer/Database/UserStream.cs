@@ -45,6 +45,11 @@ public class UserStream
     /// </summary>
     public decimal MilliSatsCollected { get; set; }
     
+    /// <summary>
+    /// Total seconds produced in HLS segments
+    /// </summary>
+    public decimal Length { get; set; }
+    
     public List<UserStreamGuest> Guests { get; init; } = new();
 }
 
