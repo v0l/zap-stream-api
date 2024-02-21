@@ -12,9 +12,11 @@ namespace NostrStreamer.Services;
 public class LndNode
 {
     private readonly Network _network;
+    private readonly ILogger<LndNode> _logger;
 
-    public LndNode(Config config)
+    public LndNode(Config config, ILogger<LndNode> logger)
     {
+        _logger = logger;
         _network = Network.GetNetwork(config.Network) ?? Network.RegTest;
         var channelOptions = new GrpcChannelOptions();
         ConfigureClient(channelOptions, config.Lnd);
@@ -28,7 +30,7 @@ public class LndNode
     public Lightning.LightningClient LightningClient { get; }
 
     public Router.RouterClient RouterClient { get; }
-    
+
     public Invoicesrpc.Invoices.InvoicesClient InvoicesClient { get; }
 
     public async Task<AddInvoiceResponse> AddInvoice(ulong mSats, TimeSpan? expire = null, string? memo = null,
@@ -121,7 +123,7 @@ public class LndNode
             throw new InvalidOperationException("CLTV delta too high");
         }
 
-        var knownBits = new[] {8, 9, 14, 15, 16, 17};
+        var knownBits = new[] { 8, 9, 14, 15, 16, 17 };
         for (var x = 0; x < 64; x++)
         {
             var n = 1L << x;
@@ -152,26 +154,33 @@ public class LndNode
         return await InvoicesClient.AddHoldInvoiceAsync(req);
     }
 
-    private static void ConfigureClient(GrpcChannelOptions opt, LndConfig conf)
+    private void ConfigureClient(GrpcChannelOptions opt, LndConfig conf)
     {
-        var macaroon = File.ReadAllBytes(Environment.ExpandEnvironmentVariables(conf.MacaroonPath));
-        var cert = File.ReadAllBytes(Environment.ExpandEnvironmentVariables(conf.CertPath));
-
-        var asyncInterceptor = new AsyncAuthInterceptor((_, meta) =>
+        try
         {
-            meta.Add("macaroon", Convert.ToHexString(macaroon));
-            return Task.CompletedTask;
-        });
+            var macaroon = File.ReadAllBytes(Environment.ExpandEnvironmentVariables(conf.MacaroonPath));
+            var cert = File.ReadAllBytes(Environment.ExpandEnvironmentVariables(conf.CertPath));
 
-        var httpHandler = new HttpClientHandler();
-        httpHandler.ServerCertificateCustomValidationCallback = (_, certificate2, _, _) =>
+            var asyncInterceptor = new AsyncAuthInterceptor((_, meta) =>
+            {
+                meta.Add("macaroon", Convert.ToHexString(macaroon));
+                return Task.CompletedTask;
+            });
+
+            var httpHandler = new HttpClientHandler();
+            httpHandler.ServerCertificateCustomValidationCallback = (_, certificate2, _, _) =>
+            {
+                var serverCert = new X509Certificate2(cert);
+                return certificate2!.Thumbprint == serverCert.Thumbprint;
+            };
+
+            opt.HttpHandler = httpHandler;
+            opt.Credentials = ChannelCredentials.Create(ChannelCredentials.SecureSsl,
+                CallCredentials.FromInterceptor(asyncInterceptor));
+        }
+        catch (Exception ex)
         {
-            var serverCert = new X509Certificate2(cert);
-            return certificate2!.Thumbprint == serverCert.Thumbprint;
-        };
-
-        opt.HttpHandler = httpHandler;
-        opt.Credentials = ChannelCredentials.Create(ChannelCredentials.SecureSsl,
-            CallCredentials.FromInterceptor(asyncInterceptor));
+            _logger.LogError(ex, "Configure failed");
+        }
     }
 }

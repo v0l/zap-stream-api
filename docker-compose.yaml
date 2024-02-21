@@ -4,7 +4,7 @@ services:
   srs-origin:
     image: ossrs/srs:5
     volumes:
-      - "./docker/srs-origin.conf:/usr/local/srs/conf/srs.conf"
+      - "./docker/srs-origin.conf:/usr/local/srs/conf/docker.conf"
     ports:
       - "9001:1935"
       - "9002:1985"
@@ -13,7 +13,7 @@ services:
   srs-edge:
     image: ossrs/srs:5
     volumes:
-      - "./docker/srs-edge.conf:/usr/local/srs/conf/srs.conf"
+      - "./docker/srs-edge.conf:/usr/local/srs/conf/docker.conf"
     ports:
       - "9005:1935"
       - "1985:1985"
@@ -43,3 +43,7 @@ services:
       - "9011:9001"
     volumes:
       - "minio-dvr:/data"
+  redis:
+    image: redis
+    ports:
+      - "6666:6379"
