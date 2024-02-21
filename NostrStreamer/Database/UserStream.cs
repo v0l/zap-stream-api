@@ -39,6 +39,12 @@ public class UserStream
     public string ForwardClientId { get; set; } = null!;
 
     public DateTime LastSegment { get; set; } = DateTime.UtcNow;
+    
+    /// <summary>
+    /// Total sats charged during this stream
+    /// </summary>
+    public decimal MilliSatsCollected { get; set; }
+    
     public List<UserStreamGuest> Guests { get; init; } = new();
 }
 

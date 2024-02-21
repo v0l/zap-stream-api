@@ -21,7 +21,8 @@ public class NostrStreamManager : IStreamManager
     private readonly NostrServicesClient _nostrApi;
     private readonly IDataProtectionProvider _dataProtectionProvider;
 
-    public NostrStreamManager(ILogger<NostrStreamManager> logger, StreamManagerContext context, IServiceProvider serviceProvider)
+    public NostrStreamManager(ILogger<NostrStreamManager> logger, StreamManagerContext context,
+        IServiceProvider serviceProvider)
     {
         _logger = logger;
         _context = context;
@@ -87,10 +88,12 @@ public class NostrStreamManager : IStreamManager
         {
             try
             {
-                var profile = await _nostrApi.Profile(_context.User.PubKey);
-                var name = profile?.Name ?? NostrConverter.ToBech32(_context.User.PubKey, "npub");
+                var npub = NostrConverter.ToBech32(_context.User.PubKey, "npub")!;
+                var profile = await _nostrApi.Profile(npub);
+                var name = profile?.Name ?? npub;
                 var id = ev.ToIdentifier();
-                await _webhook.SendMessage(_config.DiscordLiveWebhook, $"{name} went live!\nhttps://zap.stream/{id.ToBech32()}");
+                await _webhook.SendMessage(_config.DiscordLiveWebhook,
+                    $"{name} went live!\nhttps://zap.stream/{id.ToBech32()}");
             }
             catch (Exception ex)
             {
@@ -112,12 +115,16 @@ public class NostrStreamManager : IStreamManager
         var cost = (long)Math.Ceiling(_context.UserStream.Endpoint.Cost * (duration / 60d));
         if (cost > 0)
         {
-            await _context.Db.Users
-                .Where(a => a.PubKey == _context.User.PubKey)
-                .ExecuteUpdateAsync(o => o.SetProperty(v => v.Balance, v => v.Balance - cost));
+            await _context.Db.Streams
+                .Include(a => a.User)
+                .Where(a => a.PubKey == _context.User.PubKey && a.Id == _context.UserStream.Id)
+                .ExecuteUpdateAsync(o =>
+                    o.SetProperty(v => v.User.Balance, v => v.User.Balance - cost)
+                        .SetProperty(v => v.MilliSatsCollected, v => v.MilliSatsCollected + cost));
         }
 
-        _logger.LogInformation("Stream consumed {n} seconds for {pubkey} costing {cost:#,##0} milli-sats", duration, _context.User.PubKey,
+        _logger.LogInformation("Stream produced {n} seconds for {pubkey} costing {cost:#,##0} milli-sats", duration,
+            _context.User.PubKey,
             cost);
 
         if (_context.User.Balance >= balanceAlertThreshold && _context.User.Balance - cost < balanceAlertThreshold)
@@ -168,7 +175,8 @@ public class NostrStreamManager : IStreamManager
                 UserStreamId = _context.UserStream.Id,
                 Url = result.Result.ToString(),
                 Duration = result.Duration,
-                Timestamp = DateTime.UtcNow //DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(matches.Groups[1].Value)).UtcDateTime
+                Timestamp = DateTime
+                    .UtcNow //DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(matches.Groups[1].Value)).UtcDateTime
             });
 
             await _context.Db.SaveChangesAsync();
@@ -212,7 +220,8 @@ public class NostrStreamManager : IStreamManager
         if (newEvent != default && int.TryParse(oldViewers, out var a) && int.TryParse(newViewers, out var b) && a != b)
         {
             await _context.Db.Streams.Where(a => a.Id == _context.UserStream.Id)
-                .ExecuteUpdateAsync(o => o.SetProperty(v => v.Event, JsonConvert.SerializeObject(newEvent, NostrSerializer.Settings)));
+                .ExecuteUpdateAsync(o =>
+                    o.SetProperty(v => v.Event, JsonConvert.SerializeObject(newEvent, NostrSerializer.Settings)));
 
             _eventBuilder.BroadcastEvent(newEvent);
         }
