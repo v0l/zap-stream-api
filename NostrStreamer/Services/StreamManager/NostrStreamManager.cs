@@ -115,12 +115,14 @@ public class NostrStreamManager : IStreamManager
         var cost = (long)Math.Ceiling(_context.UserStream.Endpoint.Cost * (duration / 60d));
         if (cost > 0)
         {
-            await _context.Db.Streams
-                .Include(a => a.User)
-                .Where(a => a.PubKey == _context.User.PubKey && a.Id == _context.UserStream.Id)
+            await _context.Db.Users
+                .Where(a => a.PubKey == _context.User.PubKey)
                 .ExecuteUpdateAsync(o =>
-                    o.SetProperty(v => v.User.Balance, v => v.User.Balance - cost)
-                        .SetProperty(v => v.MilliSatsCollected, v => v.MilliSatsCollected + cost));
+                    o.SetProperty(v => v.Balance, v => v.Balance - cost));
+            await _context.Db.Streams
+                .Where(a => a.Id == _context.UserStream.Id)
+                .ExecuteUpdateAsync(o =>
+                    o.SetProperty(v => v.MilliSatsCollected, v => v.MilliSatsCollected + cost));
         }
 
         _logger.LogInformation("Stream produced {n} seconds for {pubkey} costing {cost:#,##0} milli-sats", duration,
