@@ -112,7 +112,13 @@ public static class Extensions
         }
 
         return new NostrEventIdentifier(ev.Id!, ev.Pubkey, null, ev.Kind);
-    } 
+    }
+
+    public static NostrIdentifier ToIdentifier(this UserStream stream)
+    {
+        var ev = NostrJson.Deserialize<NostrEvent>(stream.Event);
+        return ev!.ToIdentifier();
+    }
 }
 
 public class Variant

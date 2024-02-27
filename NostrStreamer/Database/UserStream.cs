@@ -51,6 +51,8 @@ public class UserStream
     public decimal Length { get; set; }
     
     public List<UserStreamGuest> Guests { get; init; } = new();
+
+    public List<UserStreamRecording> Recordings { get; init; } = new();
 }
 
 public enum UserStreamState

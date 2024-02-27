@@ -56,6 +56,8 @@ public class Config
     public Uri SnortApi { get; init; } = null!;
     
     public Uri? DiscordLiveWebhook { get; init; }
+
+    public int RetainRecordingsDays { get; init; } = 90;
 }
 
 public class VapidKeyDetails

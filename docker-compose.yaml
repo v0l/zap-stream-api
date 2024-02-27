@@ -1,5 +1,6 @@
 volumes:
   minio-dvr:
+  postgres:
 services:
   srs-origin:
     image: ossrs/srs:5
@@ -29,18 +30,20 @@ services:
       - "POSTGRES_HOST_AUTH_METHOD=trust"
     ports:
       - "5431:5432"
+    volumes:
+      - "postgres:/var/lib/postgresql/data"
   minio:
     image: quay.io/minio/minio
     command:
       - "server"
       - "/data" 
       - "--console-address"
-      - ":9001"
+      - ":9011"
     environment:
-      - "MINIO_SERVER_URL=http://localhost:9010"
+      - "MINIO_SERVER_URL=http://localhost:9000"
     ports:
-      - "9010:9000"
-      - "9011:9001"
+      - "9000:9000"
+      - "9011:9011"
     volumes:
       - "minio-dvr:/data"
   redis:

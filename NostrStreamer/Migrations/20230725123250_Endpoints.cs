@@ -53,6 +53,9 @@ namespace NostrStreamer.Migrations
                 principalTable: "Endpoints",
                 principalColumn: "Id",
                 onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.Sql(
+                "INSERT INTO public.\"Endpoints\"(\"Id\", \"Name\", \"App\", \"Forward\", \"Cost\", \"Capabilities\") VALUES(gen_random_uuid(), 'basic', 'basic', 'base.in.zap.stream', 1000, '{variant:source,dvr:source}');");
         }
 
         /// <inheritdoc />

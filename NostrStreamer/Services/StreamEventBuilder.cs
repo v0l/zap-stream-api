@@ -102,6 +102,22 @@ public class StreamEventBuilder
         return ev.Sign(pk);
     }
 
+    public NostrEvent CreateDm(UserStream stream, string message)
+    {
+        var pk = NostrPrivateKey.FromBech32(_config.PrivateKey);
+        var ev = new NostrEvent
+        {
+            Kind = NostrKind.EncryptedDm,
+            Content = message,
+            CreatedAt = DateTime.Now,
+            Tags = new NostrEventTags(
+                new NostrEventTag("p", stream.PubKey)
+            )
+        };
+
+        return ev.EncryptDirect(pk, NostrPublicKey.FromHex(stream.PubKey)).Sign(pk);
+    }
+
     public void BroadcastEvent(NostrEvent ev)
     {
         _nostrClient.Send(new NostrEventRequest(ev));

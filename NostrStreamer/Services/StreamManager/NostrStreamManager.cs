@@ -107,6 +107,16 @@ public class NostrStreamManager : IStreamManager
         _logger.LogInformation("Stream stopped for: {pubkey}", _context.User.PubKey);
 
         await UpdateStreamState(UserStreamState.Ended);
+
+        // send DM with link to summary
+        var msg =
+            (_context.UserStream.Thumbnail != default ? $"{_context.UserStream.Thumbnail}\n" : "") +
+            $"Your stream summary is available here: https://zap.stream/summary/{_context.UserStream.ToIdentifier().ToBech32()}\n\n" +
+            $"You paid {_context.UserStream.MilliSatsCollected / 1000:#,##0.###} sats for this stream!\n\n" +
+            $"You streamed for {_context.UserStream.Length / 60:#,##0} mins!";
+
+        var chat = _eventBuilder.CreateDm(_context.UserStream, msg);
+        _eventBuilder.BroadcastEvent(chat);
     }
 
     public async Task ConsumeQuota(double duration)

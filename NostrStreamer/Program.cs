@@ -105,6 +105,7 @@ internal static class Program
 
         // dvr services
         services.AddTransient<IDvrStore, S3DvrStore>();
+        services.AddHostedService<RecordingDeleter>();
 
         // thumbnail services
         services.AddTransient<IThumbnailService, S3ThumbnailService>();

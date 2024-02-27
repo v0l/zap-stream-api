@@ -86,10 +86,30 @@ public class S3DvrStore : IDvrStore
         // cleanup temp file
         fs.Close();
         File.Delete(tmpFile);
-        
-        _logger.LogInformation("download={tc:#,##0}ms, probe={pc:#,##0}ms, upload={uc:#,##0}ms", tsDownload.TotalMilliseconds,
+
+        _logger.LogInformation("download={tc:#,##0}ms, probe={pc:#,##0}ms, upload={uc:#,##0}ms",
+            tsDownload.TotalMilliseconds,
             tsProbe.TotalMilliseconds, tsUpload.TotalMilliseconds);
 
         return new(ub.Uri, probe.Duration.TotalSeconds);
+    }
+
+    public async Task<List<Guid>> DeleteRecordings(UserStream stream)
+    {
+        var deleted = new List<Guid>();
+        foreach (var batch in stream.Recordings.Select((a, i) => (Batch: i / 1000, Item: a)).GroupBy(a => a.Batch))
+        {
+            var res = await _client.DeleteObjectsAsync(new()
+            {
+                BucketName = _config.BucketName,
+                Objects = batch.Select(a => new KeyVersion()
+                {
+                    Key = $"{stream.Id}/{a.Item.Id}.ts"
+                }).ToList()
+            });
+            deleted.AddRange(res.DeletedObjects.Select(a => Guid.Parse(Path.GetFileNameWithoutExtension(a.Key))));
+        }
+
+        return deleted;
     }
 }
