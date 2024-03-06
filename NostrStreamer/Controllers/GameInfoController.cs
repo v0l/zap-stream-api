@@ -7,7 +7,7 @@ namespace NostrStreamer.Controllers;
 [Route("/api/v1/games")]
 public class GameInfoController(GameDb gameDb) : Controller
 {
-    [HttpGet]
+    [HttpGet("search")]
     public async Task<IActionResult> GetGames([FromQuery] string q, [FromQuery] int limit = 10)
     {
         var data = await gameDb.SearchGames(q, limit);
