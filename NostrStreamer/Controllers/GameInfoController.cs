@@ -23,7 +23,7 @@ public class GameInfoController(GameDb gameDb) : Controller
     [HttpGet("{id}")]
     public async Task<IActionResult> GetGame([FromQuery] string id)
     {
-        var data = await gameDb.GetGame(id);
+        var data = await gameDb.GetGame(id.Split(":")[1]);
 
         return Json(data?.ToGameInfo(), new JsonSerializerSettings()
         {
