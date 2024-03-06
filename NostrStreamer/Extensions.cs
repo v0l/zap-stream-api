@@ -1,12 +1,14 @@
 using Amazon;
 using Amazon.Runtime;
 using Amazon.S3;
+using Igdb;
 using MaxMind.GeoIP2;
 using Newtonsoft.Json;
 using Nostr.Client.Identifiers;
 using Nostr.Client.Json;
 using Nostr.Client.Keys;
 using Nostr.Client.Messages;
+using NostrStreamer.ApiModel;
 using NostrStreamer.Database;
 
 namespace NostrStreamer;
@@ -118,6 +120,17 @@ public static class Extensions
     {
         var ev = NostrJson.Deserialize<NostrEvent>(stream.Event);
         return ev!.ToIdentifier();
+    }
+
+    public static GameInfo ToGameInfo(this Game a)
+    {
+        return new GameInfo
+        {
+            Id = $"igdb:{a.Id}",
+            Name = a.Name,
+            Cover = $"https://images.igdb.com/igdb/image/upload/t_cover_big_2x/{a.Cover?.ImageId}.jpg",
+            Genres = a.Genres.Select(b => b.Name).ToList()
+        };
     }
 }
 

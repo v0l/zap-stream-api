@@ -77,6 +77,32 @@ public class GameDb
 
         return default;
     }
+    
+    public async Task<Game?> GetGame(string id)
+    {
+        await RefreshToken();
+
+        var req = new HttpRequestMessage(HttpMethod.Post, "https://api.igdb.com/v4/games.pb");
+        req.Headers.Add("Client-ID", _config.ClientId);
+        req.Headers.Authorization = new("Bearer", _currentToken?.AccessToken);
+        req.Content = new StringContent($"fields id,cover.image_id,genres.name,name; where id = {id};");
+
+        var rsp = await _client.SendAsync(req);
+        if (rsp.IsSuccessStatusCode)
+        {
+            var rspStream = await rsp.Content.ReadAsStreamAsync();
+
+            var ret = GameResult.Parser.ParseFrom(rspStream);
+            return ret.Games.FirstOrDefault();
+        }
+        else
+        {
+            var content = await rsp.Content.ReadAsStringAsync();
+            _logger.LogWarning("Failed to fetch games {msg}", content);
+        }
+
+        return default;
+    }
 
     class Token
     {
