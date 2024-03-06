@@ -22,6 +22,7 @@ public class GameInfoController : Controller
 
         var mapped = data?.Select(a => new GameInfo()
         {
+            Id = $"igdb:{a.Id}",
             Name = a.Name,
             Cover = $"https://images.igdb.com/igdb/image/upload/t_cover_big_2x/{a.Cover?.ImageId}.jpg",
             Genres = a.Genres.Select(b => b.Name).ToList()
