@@ -21,7 +21,7 @@ public class GameInfoController(GameDb gameDb) : Controller
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetGame([FromQuery] string id)
+    public async Task<IActionResult> GetGame([FromRoute] string id)
     {
         var data = await gameDb.GetGame(id.Split(":")[1]);
 
