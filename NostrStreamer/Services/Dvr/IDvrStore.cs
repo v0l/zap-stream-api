@@ -20,4 +20,4 @@ public interface IDvrStore
     Task<List<Guid>> DeleteRecordings(UserStream stream);
 }
 
-public record UploadResult(Uri Result, double Duration);
+public record UploadResult(Guid Id, Uri Result, double Duration);

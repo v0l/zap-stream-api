@@ -195,6 +195,7 @@ public class NostrStreamManager : IStreamManager
             var result = await _dvrStore.UploadRecording(_context.UserStream, segment);
             _context.Db.Recordings.Add(new()
             {
+                Id = result.Id,
                 UserStreamId = _context.UserStream.Id,
                 Url = result.Result.ToString(),
                 Duration = result.Duration,

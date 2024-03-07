@@ -82,12 +82,12 @@ public class S3DvrStore(Config config, HttpClient httpClient, ILogger<S3DvrStore
             tsDownload.TotalMilliseconds,
             tsProbe.TotalMilliseconds, tsUpload.TotalMilliseconds);
 
-        return new(ub.Uri, probe.Duration.TotalSeconds);
+        return new(recordingId, ub.Uri, probe.Duration.TotalSeconds);
     }
 
     public async Task<List<Guid>> DeleteRecordings(UserStream stream)
     {
-        var deleted = new List<Guid>();
+        var deleted = new HashSet<Guid>();
         foreach (var batch in stream.Recordings.Select((a, i) => (Batch: i / 100, Item: a)).GroupBy(a => a.Batch))
         {
             var res = await _client.DeleteObjectsAsync(new()
@@ -96,17 +96,30 @@ public class S3DvrStore(Config config, HttpClient httpClient, ILogger<S3DvrStore
                 Objects = batch.Select(a => new KeyVersion()
                 {
                     Key = $"{stream.Id}/{a.Item.Id}.ts"
-                }).ToList()
+                }).Concat(batch.Select(a =>
+                {
+                    var url = new Uri(a.Item.Url);
+                    return new KeyVersion
+                    {
+                        Key = url.AbsolutePath.Replace($"/${_config.BucketName}", string.Empty)
+                    };
+                })).ToList()
             });
-            deleted.AddRange(res.DeletedObjects.Select(a => Guid.Parse(Path.GetFileNameWithoutExtension(a.Key))));
+            foreach (var d in res.DeletedObjects)
+            {
+                deleted.Add(Guid.Parse(Path.GetFileNameWithoutExtension(d.Key)));
+            }
         }
 
-        await _client.DeleteObjectAsync(new()
+        if (deleted.Count == stream.Recordings.Count)
         {
-            BucketName = _config.BucketName,
-            Key = $"{stream.Id}/"
-        });
+            await _client.DeleteObjectAsync(new()
+            {
+                BucketName = _config.BucketName,
+                Key = $"{stream.Id}/"
+            });
+        }
 
-        return deleted;
+        return deleted.ToList();
     }
 }
