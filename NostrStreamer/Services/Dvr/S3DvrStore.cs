@@ -6,20 +6,11 @@ using NostrStreamer.Database;
 
 namespace NostrStreamer.Services.Dvr;
 
-public class S3DvrStore : IDvrStore
+public class S3DvrStore(Config config, HttpClient httpClient, ILogger<S3DvrStore> logger)
+    : IDvrStore
 {
-    private readonly AmazonS3Client _client;
-    private readonly S3BlobConfig _config;
-    private readonly HttpClient _httpClient;
-    private readonly ILogger<S3DvrStore> _logger;
-
-    public S3DvrStore(Config config, HttpClient httpClient, ILogger<S3DvrStore> logger)
-    {
-        _httpClient = httpClient;
-        _logger = logger;
-        _config = config.S3Store;
-        _client = config.S3Store.CreateClient();
-    }
+    private readonly AmazonS3Client _client = config.S3Store.CreateClient();
+    private readonly S3BlobConfig _config = config.S3Store;
 
     public async Task<UploadResult> UploadRecording(UserStream stream, Uri source)
     {
@@ -43,7 +34,7 @@ public class S3DvrStore : IDvrStore
 
         sw.Restart();
         await using var fs = new FileStream(tmpFile, FileMode.Create, FileAccess.ReadWrite);
-        var dl = await _httpClient.GetStreamAsync(source);
+        var dl = await httpClient.GetStreamAsync(source);
         await dl.CopyToAsync(fs);
         await fs.FlushAsync();
         fs.Seek(0, SeekOrigin.Begin);
@@ -87,7 +78,7 @@ public class S3DvrStore : IDvrStore
         fs.Close();
         File.Delete(tmpFile);
 
-        _logger.LogInformation("download={tc:#,##0}ms, probe={pc:#,##0}ms, upload={uc:#,##0}ms",
+        logger.LogInformation("download={tc:#,##0}ms, probe={pc:#,##0}ms, upload={uc:#,##0}ms",
             tsDownload.TotalMilliseconds,
             tsProbe.TotalMilliseconds, tsUpload.TotalMilliseconds);
 
@@ -97,7 +88,7 @@ public class S3DvrStore : IDvrStore
     public async Task<List<Guid>> DeleteRecordings(UserStream stream)
     {
         var deleted = new List<Guid>();
-        foreach (var batch in stream.Recordings.Select((a, i) => (Batch: i / 1000, Item: a)).GroupBy(a => a.Batch))
+        foreach (var batch in stream.Recordings.Select((a, i) => (Batch: i / 100, Item: a)).GroupBy(a => a.Batch))
         {
             var res = await _client.DeleteObjectsAsync(new()
             {
@@ -109,6 +100,12 @@ public class S3DvrStore : IDvrStore
             });
             deleted.AddRange(res.DeletedObjects.Select(a => Guid.Parse(Path.GetFileNameWithoutExtension(a.Key))));
         }
+
+        await _client.DeleteObjectAsync(new()
+        {
+            BucketName = _config.BucketName,
+            Key = $"{stream.Id}/"
+        });
 
         return deleted;
     }

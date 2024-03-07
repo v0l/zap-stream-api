@@ -5,16 +5,10 @@ using NostrStreamer.Database;
 
 namespace NostrStreamer.Services.Thumbnail;
 
-public class S3ThumbnailService : BaseThumbnailService, IThumbnailService
+public class S3ThumbnailService(Config config, ILogger<S3ThumbnailService> logger, StreamerContext context)
+    : BaseThumbnailService(config, logger), IThumbnailService
 {
-    private readonly AmazonS3Client _client;
-    private readonly StreamerContext _context;
-
-    public S3ThumbnailService(Config config, ILogger<S3ThumbnailService> logger, StreamerContext context) : base(config, logger)
-    {
-        _client = config.S3Store.CreateClient();
-        _context = context;
-    }
+    private readonly AmazonS3Client _client = config.S3Store.CreateClient();
 
     public async Task GenerateThumb(UserStream stream)
     {
@@ -54,7 +48,7 @@ public class S3ThumbnailService : BaseThumbnailService, IThumbnailService
 
             var tUpload = sw.Elapsed;
             sw.Restart();
-            await _context.Streams.Where(a => a.Id == stream.Id)
+            await context.Streams.Where(a => a.Id == stream.Id)
                 .ExecuteUpdateAsync(o => o.SetProperty(v => v.Thumbnail, ub.Uri.ToString()));
 
             var tDbUpdate = sw.Elapsed;
