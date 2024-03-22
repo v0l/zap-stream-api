@@ -1,7 +1,9 @@
 using System.Security.Cryptography;
 using System.Text;
+using BTCPayServer.Lightning;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using NBitcoin;
 using Nostr.Client.Utils;
 using NostrStreamer.ApiModel;
 using NostrStreamer.Database;
@@ -77,6 +79,90 @@ public class UserService
         await _db.SaveChangesAsync();
 
         return invoice.PaymentRequest;
+    }
+
+    public async Task<(long Fee, string Preimage)> WithdrawFunds(string pubkey, string invoice)
+    {
+        var user = await GetUser(pubkey);
+        if (user == default) throw new Exception("No user found");
+
+        var maxOut = await MaxWithdrawalAmount(pubkey);
+        var pr = BOLT11PaymentRequest.Parse(invoice, invoice.StartsWith("lnbc1") ? Network.Main : Network.RegTest);
+        if (pr.MinimumAmount == 0)
+        {
+            throw new Exception("0 amount invoice not supported");
+        }
+
+        if (maxOut <= pr.MinimumAmount.MilliSatoshi)
+        {
+            throw new Exception("Not enough balance to pay invoice");
+        }
+
+        // start by taking balance
+        var rHash = pr.PaymentHash!.ToString();
+        await using (var tx = await _db.Database.BeginTransactionAsync())
+        {
+            await _db.Users
+                .Where(a => a.PubKey == pubkey)
+                .ExecuteUpdateAsync(p => p.SetProperty(o => o.Balance, b => b.Balance - pr.MinimumAmount.MilliSatoshi));
+            _db.Payments.Add(new()
+            {
+                PubKey = pubkey,
+                Invoice = invoice,
+                Type = PaymentType.Withdrawal,
+                PaymentHash = rHash,
+                Amount = (ulong)pr.MinimumAmount.MilliSatoshi / 1000,
+            });
+
+            await tx.CommitAsync();
+        }
+
+        try
+        {
+            const double feeMax = 0.005; // 0.5% max fee
+            var result = await _lnd.SendPayment(invoice, (long)(pr.MinimumAmount.MilliSatoshi * feeMax));
+            if (result?.Status is Lnrpc.Payment.Types.PaymentStatus.Succeeded)
+            {
+                await _db.Payments
+                    .Where(a => a.PaymentHash == rHash)
+                    .ExecuteUpdateAsync(o => o.SetProperty(v => v.IsPaid, true)
+                        .SetProperty(v => v.Amount, b => b.Amount + (ulong)result.FeeSat));
+                return (result.FeeMsat, result.PaymentPreimage);
+            }
+
+            throw new Exception("Payment failed");
+        }
+        catch
+        {
+            // return balance on error
+            await _db.Users
+                .Where(a => a.PubKey == pubkey)
+                .ExecuteUpdateAsync(p => p.SetProperty(o => o.Balance, b => b.Balance + pr.MinimumAmount.MilliSatoshi));
+            throw;
+        }
+    }
+
+    public async Task<List<Payment>> ListPayments(string pubkey)
+    {
+        return await _db.Payments
+            .Where(a => a.PubKey == pubkey && a.IsPaid)
+            .ToListAsync();
+    }
+
+    public async Task<long> MaxWithdrawalAmount(string pubkey)
+    {
+        var credit = 1000 * await _db.Payments
+            .Where(a => a.PubKey == pubkey &&
+                        a.IsPaid &&
+                        a.Type == PaymentType.Credit)
+            .SumAsync(a => (long)a.Amount);
+
+        var balance = await _db.Users
+            .Where(a => a.PubKey == pubkey)
+            .Select(a => a.Balance)
+            .FirstAsync();
+
+        return Math.Max(0, balance - credit);
     }
 
     public async Task<User?> GetUser(string pubkey)

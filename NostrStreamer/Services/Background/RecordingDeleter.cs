@@ -67,4 +67,17 @@ public class RecordingDeleter : BackgroundService
             await Task.Delay(TimeSpan.FromMinutes(30), stoppingToken);
         }
     }
+
+    private async Task DeleteBroken(StreamerContext db, IDvrStore dvrStore, CancellationToken stoppingToken)
+    {
+        var olderThan = DateTime.UtcNow.Subtract(TimeSpan.FromDays(_config.RetainRecordingsDays));
+        
+        var toDelete = await db.Streams
+            .AsNoTracking()
+            .Where(a => a.Starts < olderThan)
+            .Select(a => a.Id)
+            .ToListAsync(cancellationToken: stoppingToken);
+
+        _logger.LogInformation("Starting (broken) delete of {n:###0} stream recordings", toDelete.Count);
+    }
 }

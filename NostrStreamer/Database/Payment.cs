@@ -11,6 +11,9 @@ public class Payment
     
     public bool IsPaid { get; set; }
     
+    /// <summary>
+    /// Payment amount in sats!!
+    /// </summary>
     public ulong Amount { get; init; }
     
     public DateTime Created { get; init; } = DateTime.UtcNow;
@@ -24,5 +27,6 @@ public enum PaymentType
 {
     Topup = 0,
     Zap = 1,
-    Credit = 2
+    Credit = 2,
+    Withdrawal = 3,
 }

@@ -28,7 +28,8 @@ public class NostrController : Controller
     private readonly ILogger<NostrController> _logger;
     private readonly PushSender _pushSender;
 
-    public NostrController(StreamerContext db, Config config, StreamManagerFactory streamManager, UserService userService,
+    public NostrController(StreamerContext db, Config config, StreamManagerFactory streamManager,
+        UserService userService,
         IClipService clipService, ILogger<NostrController> logger, PushSender pushSender)
     {
         _db = db;
@@ -185,7 +186,8 @@ public class NostrController : Controller
     }
 
     [HttpPost("clip/{streamId:guid}/{tempClipId:guid}")]
-    public async Task<IActionResult> MakeClip([FromRoute] Guid streamId, [FromRoute] Guid tempClipId, [FromQuery] float start,
+    public async Task<IActionResult> MakeClip([FromRoute] Guid streamId, [FromRoute] Guid tempClipId,
+        [FromQuery] float start,
         [FromQuery] float length)
     {
         var pk = GetPubKey();
@@ -265,7 +267,7 @@ public class NostrController : Controller
         var existing = await _db.PushSubscriptions.FirstOrDefaultAsync(a => a.Key == sub.Key);
         if (existing != default)
         {
-            return Json(new {id = existing.Id});
+            return Json(new { id = existing.Id });
         }
 
         var newId = Guid.NewGuid();
@@ -296,7 +298,7 @@ public class NostrController : Controller
 
         var sub = await _db.PushSubscriptionTargets
             .Join(_db.PushSubscriptions, a => a.SubscriberPubkey, b => b.Pubkey,
-                (a, b) => new {a.SubscriberPubkey, a.TargetPubkey, b.Auth})
+                (a, b) => new { a.SubscriberPubkey, a.TargetPubkey, b.Auth })
             .Where(a => a.SubscriberPubkey == userPubkey && a.Auth == auth)
             .Select(a => a.TargetPubkey)
             .ToListAsync();
@@ -349,6 +351,22 @@ public class NostrController : Controller
             .ExecuteDeleteAsync();
 
         return Accepted();
+    }
+
+    [HttpPost("withdraw")]
+    public async Task<IActionResult> WithdrawFunds([FromQuery] string invoice)
+    {
+        if (string.IsNullOrEmpty(invoice)) return BadRequest();
+
+        var userPubkey = GetPubKey();
+        if (string.IsNullOrEmpty(userPubkey))
+            return BadRequest();
+
+        var (fee, preimage) = await _userService.WithdrawFunds(userPubkey, invoice);
+        return Json(new
+        {
+            fee, preimage
+        });
     }
 
     private async Task<User?> GetUser()
