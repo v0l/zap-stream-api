@@ -47,7 +47,8 @@ public class LnurlController : Controller
     }
 
     [HttpGet("{key}")]
-    public async Task<IActionResult> PayUserBalance([FromRoute] string key, [FromQuery] ulong amount, [FromQuery] string? nostr)
+    public async Task<IActionResult> PayUserBalance([FromRoute] string key, [FromQuery] ulong amount,
+        [FromQuery] string? nostr)
     {
         try
         {
@@ -58,7 +59,9 @@ public class LnurlController : Controller
             if (!string.IsNullOrEmpty(nostr))
             {
                 var ev = JsonConvert.DeserializeObject<NostrEvent>(nostr, NostrSerializer.Settings);
-                if (ev?.Kind != NostrKind.ZapRequest || ev.Tags?.FindFirstTagValue("amount") != amount.ToString() ||
+                var amountTag = ev?.Tags?.FindFirstTagValue("amount");
+                if (ev?.Kind != NostrKind.ZapRequest ||
+                    (amountTag != default && amountTag != amount.ToString()) ||
                     !ev.IsSignatureValid())
                 {
                     throw new Exception("Invalid nostr event");
