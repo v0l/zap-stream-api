@@ -124,10 +124,16 @@ public class UserService
             var result = await _lnd.SendPayment(invoice, (long)(pr.MinimumAmount.MilliSatoshi * feeMax));
             if (result?.Status is Lnrpc.Payment.Types.PaymentStatus.Succeeded)
             {
+                // update payment amount with fee + mark as completed
                 await _db.Payments
                     .Where(a => a.PaymentHash == rHash)
                     .ExecuteUpdateAsync(o => o.SetProperty(v => v.IsPaid, true)
                         .SetProperty(v => v.Amount, b => b.Amount + (ulong)result.FeeSat));
+                
+                // take fee from balance
+                await _db.Users
+                    .Where(a => a.PubKey == pubkey)
+                    .ExecuteUpdateAsync(p => p.SetProperty(o => o.Balance, b => b.Balance - result.FeeSat));
                 return (result.FeeMsat, result.PaymentPreimage);
             }
 
