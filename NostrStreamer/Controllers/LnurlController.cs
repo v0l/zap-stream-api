@@ -41,7 +41,8 @@ public class LnurlController : Controller
             MinSendable = LightMoney.Satoshis(1),
             MaxSendable = LightMoney.Coins(1),
             Tag = "payRequest",
-            NostrPubkey = pubKey
+            NostrPubkey = pubKey,
+            AllowsNostr = true,
         });
     }
 
