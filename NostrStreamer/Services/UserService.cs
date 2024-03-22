@@ -43,7 +43,7 @@ public class UserService
             PubKey = pubkey,
             Type = PaymentType.Credit,
             IsPaid = true,
-            Amount = (ulong)user.Balance / 1000,
+            Amount = (ulong)user.Balance,
             PaymentHash = SHA256.HashData(Encoding.UTF8.GetBytes($"{pubkey}-init-credit")).ToHex()
         });
 
@@ -69,7 +69,7 @@ public class UserService
         _db.Payments.Add(new()
         {
             PubKey = pubkey,
-            Amount = amount / 1000,
+            Amount = amount,
             Invoice = invoice.PaymentRequest,
             PaymentHash = invoice.RHash.ToByteArray().ToHex(),
             Nostr = nostr,
@@ -111,7 +111,7 @@ public class UserService
                 Invoice = invoice,
                 Type = PaymentType.Withdrawal,
                 PaymentHash = rHash,
-                Amount = (ulong)pr.MinimumAmount.MilliSatoshi / 1000,
+                Amount = (ulong)pr.MinimumAmount.MilliSatoshi
             });
 
             await _db.SaveChangesAsync();
@@ -128,8 +128,8 @@ public class UserService
                 await _db.Payments
                     .Where(a => a.PaymentHash == rHash)
                     .ExecuteUpdateAsync(o => o.SetProperty(v => v.IsPaid, true)
-                        .SetProperty(v => v.Amount, b => b.Amount + (ulong)result.FeeSat));
-                
+                        .SetProperty(v => v.Fee, (ulong)result.FeeMsat));
+
                 // take fee from balance
                 await _db.Users
                     .Where(a => a.PubKey == pubkey)
@@ -158,7 +158,7 @@ public class UserService
 
     public async Task<long> MaxWithdrawalAmount(string pubkey)
     {
-        var credit = 1000 * await _db.Payments
+        var credit = await _db.Payments
             .Where(a => a.PubKey == pubkey &&
                         a.IsPaid &&
                         a.Type == PaymentType.Credit)

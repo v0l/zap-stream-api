@@ -12,7 +12,7 @@ public class Payment
     public bool IsPaid { get; set; }
     
     /// <summary>
-    /// Payment amount in sats!!
+    /// Payment amount in milli-sats!!
     /// </summary>
     public ulong Amount { get; init; }
     
@@ -21,6 +21,11 @@ public class Payment
     public string? Nostr { get; init; }
     
     public PaymentType Type { get; init; }
+    
+    /// <summary>
+    /// Fee paid for withdrawal in milli-sats
+    /// </summary>
+    public ulong Fee { get; init; }
 }
 
 public enum PaymentType

@@ -22,6 +22,8 @@ public class PaymentsConfiguration : IEntityTypeConfiguration<Payment>
         builder.Property(a => a.Nostr);
         builder.Property(a => a.Type)
             .IsRequired();
+        builder.Property(a => a.Fee)
+            .IsRequired();
 
         builder.HasOne(a => a.User)
             .WithMany(a => a.Payments)

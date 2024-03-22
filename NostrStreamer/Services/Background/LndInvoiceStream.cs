@@ -55,7 +55,7 @@ public class LndInvoicesStream : BackgroundService
                             if (payment is {IsPaid: false} && msg.State is Invoice.Types.InvoiceState.Settled)
                             {
                                 payment.IsPaid = true;
-                                payment.User.Balance += (long)(payment.Amount * 1000L);
+                                payment.User.Balance += (long)payment.Amount;
                                 await db.SaveChangesAsync(stoppingToken);
                                 if (!string.IsNullOrEmpty(payment.Nostr) && !string.IsNullOrEmpty(payment.Invoice))
                                 {
