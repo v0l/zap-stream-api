@@ -114,6 +114,7 @@ public class UserService
                 Amount = (ulong)pr.MinimumAmount.MilliSatoshi / 1000,
             });
 
+            await _db.SaveChangesAsync();
             await tx.CommitAsync();
         }
 
