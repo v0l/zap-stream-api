@@ -1,8 +1,7 @@
-using System.Xml;
 using System.Xml.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Nostr.Client.Identifiers;
+using Nostr.Client.Keys;
 using NostrStreamer.Database;
 
 namespace NostrStreamer.Controllers;
@@ -26,6 +25,7 @@ public class PodcastController(StreamerContext db, Config config) : Controller
         }
 
         var pod = new PodcastRoot();
+        var link = stream.ToIdentifier();
         pod.LiveItem = new()
         {
             Guid = stream.Id,
@@ -36,7 +36,7 @@ public class PodcastController(StreamerContext db, Config config) : Controller
             End = stream.Ends ?? new DateTime(),
             ContentLink = new()
             {
-                Href = $"https://zap.stream/{stream.ToIdentifier().ToBech32()}",
+                Href = $"https://zap.stream/{link.ToBech32()}",
                 Text = "Watch live on zap.stream!"
             },
             Enclosure = new()
@@ -45,6 +45,12 @@ public class PodcastController(StreamerContext db, Config config) : Controller
                 Type = "application/x-mpegurl",
                 Length = 0
             }
+        };
+        pod.SocialInteract = new()
+        {
+            Url = $"nostr:{link.ToBech32()}",
+            Protocol = "nostr",
+            AccountId = NostrPublicKey.FromHex(stream.PubKey).Bech32
         };
 
         Response.ContentType = "text/xml";
@@ -70,6 +76,19 @@ public class Enclosure
 
     [XmlAttribute(AttributeName = "length")]
     public int Length { get; set; }
+}
+
+[XmlRoot(ElementName = "socialInteract")]
+public class SocialInteract
+{
+    [XmlAttribute(AttributeName = "url")]
+    public string Url { get; set; }
+
+    [XmlAttribute(AttributeName = "protocol")]
+    public string Protocol { get; set; } = "nostr";
+
+    [XmlAttribute(AttributeName = "accountId")]
+    public string AccountId { get; set; }
 }
 
 [XmlRoot(ElementName = "contentLink")]
@@ -115,4 +134,7 @@ public class PodcastRoot
 {
     [XmlElement(ElementName = "liveItem", Namespace = "https://podcastindex.org/namespace/1.0")]
     public LiveItem? LiveItem { get; set; }
+    
+    [XmlElement(ElementName = "socialInteract", Namespace = "https://podcastindex.org/namespace/1.0")]
+    public SocialInteract? SocialInteract { get; set; }
 }
