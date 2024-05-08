@@ -84,22 +84,26 @@ public class NostrStreamManager : IStreamManager
 
         var ev = await UpdateStreamState(UserStreamState.Live);
 
-        if (_config.DiscordLiveWebhook != default)
+        _ = Task.Factory.StartNew(async () =>
         {
-            try
+            if (_config.DiscordLiveWebhook != default)
             {
-                var npub = NostrConverter.ToBech32(_context.User.PubKey, "npub")!;
-                var profile = await _nostrApi.Profile(npub);
-                var name = profile?.Name ?? npub;
-                var id = ev.ToIdentifier();
-                await _webhook.SendMessage(_config.DiscordLiveWebhook,
-                    $"{name} went live!\nhttps://zap.stream/{id.ToBech32()}");
+                try
+                {
+                    var npub = NostrConverter.ToBech32(_context.User.PubKey, "npub")!;
+                    var profile = await _nostrApi.Profile(npub);
+                    var name = profile?.Name ?? npub;
+                    var id = ev.ToIdentifier();
+                    await _webhook.SendMessage(_config.DiscordLiveWebhook,
+                        $"{name} went live!\nhttps://zap.stream/{id.ToBech32()}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("Failed to send notification {msg}", ex.Message);
+                }
             }
-            catch (Exception ex)
-            {
-                _logger.LogWarning("Failed to send notification {msg}", ex.Message);
-            }
-        }
+        });
+        
     }
 
     public async Task StreamStopped()
