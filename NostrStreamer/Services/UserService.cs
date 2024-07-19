@@ -149,12 +149,43 @@ public class UserService
         }
     }
 
-    public async Task<List<Payment>> ListPayments(string pubkey)
+    public async Task<List<Payment>> ListPayments(string pubkey, int offset = 0, int limit = 100)
     {
         return await _db.Payments
             .Where(a => a.PubKey == pubkey && a.IsPaid)
+            .Skip(offset)
+            .Take(limit)
             .ToListAsync();
     }
+
+    public async Task<List<BalanceHistoryItem>> BalanceHistory(string pubkey, int offset = 0, int limit = 100)
+    {
+        return await _db.Payments
+            .Where(a => a.PubKey == pubkey && a.IsPaid)
+            .Select(t => new BalanceHistoryItem
+            {
+                Created = t.Created,
+                Type = t.Type == PaymentType.Withdrawal ? BalanceHistoryItemType.Debit : BalanceHistoryItemType.Credit,
+                Description = t.Type == PaymentType.Withdrawal
+                    ? "Withdrawal"
+                    : (t.Type == PaymentType.Credit ? "Admin Credit" : ""),
+                Amount = t.Amount / 1000m
+            })
+            .Union(_db.Streams
+                .Where(a => a.PubKey == pubkey && a.State == UserStreamState.Ended)
+                .Select(t => new BalanceHistoryItem
+                {
+                    Created = t.Starts,
+                    Description = t.Event,
+                    Type = BalanceHistoryItemType.Debit,
+                    Amount = t.MilliSatsCollected / 1000m
+                }))
+            .OrderByDescending(a => a.Created)
+            .Skip(offset)
+            .Take(limit)
+            .ToListAsync();
+    }
+
 
     public async Task<long> MaxWithdrawalAmount(string pubkey)
     {

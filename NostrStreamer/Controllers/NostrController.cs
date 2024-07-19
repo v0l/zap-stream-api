@@ -362,11 +362,46 @@ public class NostrController : Controller
         if (string.IsNullOrEmpty(userPubkey))
             return BadRequest();
 
-        var (fee, preimage) = await _userService.WithdrawFunds(userPubkey, invoice);
-        return Json(new
+        try
         {
-            fee, preimage
-        });
+            var (fee, preimage) = await _userService.WithdrawFunds(userPubkey, invoice);
+            return Json(new
+            {
+                fee, preimage
+            });
+        }
+        catch (Exception e)
+        {
+            return Json(new
+            {
+                error = e.Message
+            });
+        }
+    }
+
+    [HttpGet("history")]
+    public async Task<IActionResult> BalanceHistory([FromQuery] int page = 0, [FromQuery] int pageSize = 100)
+    {
+        var userPubkey = GetPubKey();
+        if (string.IsNullOrEmpty(userPubkey))
+            return BadRequest();
+
+        try
+        {
+            var txns = await _userService.BalanceHistory(userPubkey, page * pageSize, pageSize);
+            return Json(new
+            {
+                items = txns,
+                page, pageSize
+            });
+        }
+        catch (Exception e)
+        {
+            return Json(new
+            {
+                error = e.Message
+            });
+        }
     }
 
     private async Task<User?> GetUser()
