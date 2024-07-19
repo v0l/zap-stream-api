@@ -87,7 +87,7 @@ public class UserService
         if (user == default) throw new Exception("No user found");
 
         var maxOut = await MaxWithdrawalAmount(pubkey);
-        var pr = BOLT11PaymentRequest.Parse(invoice, invoice.StartsWith("lnbc1") ? Network.Main : Network.RegTest);
+        var pr = BOLT11PaymentRequest.Parse(invoice, invoice.StartsWith("lnbc") ? Network.Main : Network.RegTest);
         if (pr.MinimumAmount == 0)
         {
             throw new Exception("0 amount invoice not supported");
