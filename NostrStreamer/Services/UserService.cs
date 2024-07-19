@@ -168,7 +168,7 @@ public class UserService
                 Type = t.Type == PaymentType.Withdrawal ? BalanceHistoryItemType.Debit : BalanceHistoryItemType.Credit,
                 Description = t.Type == PaymentType.Withdrawal
                     ? "Withdrawal"
-                    : (t.Type == PaymentType.Credit ? "Admin Credit" : ""),
+                    : (t.Type == PaymentType.Credit ? "Admin Credit" : (t.Type == PaymentType.Zap ? t.Nostr : "")),
                 Amount = t.Amount / 1000m
             })
             .Union(_db.Streams
