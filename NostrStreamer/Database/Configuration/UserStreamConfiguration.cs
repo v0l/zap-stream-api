@@ -32,7 +32,9 @@ public class UserStreamConfiguration : IEntityTypeConfiguration<UserStream>
 
         builder.Property(a => a.LastSegment)
             .IsRequired();
-        
+
+        builder.Property(a => a.AdmissionCost);
+
         builder.HasOne(a => a.Endpoint)
             .WithMany()
             .HasForeignKey(a => a.EndpointId);

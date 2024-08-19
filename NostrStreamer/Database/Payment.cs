@@ -30,8 +30,9 @@ public class Payment
 
 public enum PaymentType
 {
-    Topup = 0,
+    TopUp = 0,
     Zap = 1,
     Credit = 2,
     Withdrawal = 3,
+    AdmissionFee = 4,
 }

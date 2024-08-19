@@ -73,7 +73,7 @@ public class UserService
             Invoice = invoice.PaymentRequest,
             PaymentHash = invoice.RHash.ToByteArray().ToHex(),
             Nostr = nostr,
-            Type = string.IsNullOrEmpty(nostr) ? PaymentType.Topup : PaymentType.Zap
+            Type = string.IsNullOrEmpty(nostr) ? PaymentType.TopUp : PaymentType.Zap
         });
 
         await _db.SaveChangesAsync();

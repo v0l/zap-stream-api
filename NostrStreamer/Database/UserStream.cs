@@ -8,18 +8,18 @@ public class UserStream
     public User User { get; init; } = null!;
 
     public string StreamId { get; init; } = null!;
-    
+
     public DateTime Starts { get; init; } = DateTime.UtcNow;
-    
+
     public DateTime? Ends { get; set; }
-    
+
     public UserStreamState State { get; set; }
-    
+
     /// <summary>
     /// Nostr Event for this stream
     /// </summary>
     public string Event { get; set; } = null!;
-    
+
     /// <summary>
     /// URL of auto-generated thumbnail
     /// </summary>
@@ -32,24 +32,29 @@ public class UserStream
     /// Publisher edge IP
     /// </summary>
     public string EdgeIp { get; set; } = null!;
-    
+
     /// <summary>
     /// Publisher edge client id
     /// </summary>
     public string ForwardClientId { get; set; } = null!;
 
     public DateTime LastSegment { get; set; } = DateTime.UtcNow;
-    
+
     /// <summary>
     /// Total sats charged during this stream
     /// </summary>
     public decimal MilliSatsCollected { get; set; }
-    
+
     /// <summary>
     /// Total seconds produced in HLS segments
     /// </summary>
     public decimal Length { get; set; }
-    
+
+    /// <summary>
+    /// Cost to view stream, tickets in <see cref="StreamTickets"/>
+    /// </summary>
+    public decimal? AdmissionCost { get; set; }
+
     public List<UserStreamGuest> Guests { get; init; } = new();
 
     public List<UserStreamRecording> Recordings { get; init; } = new();
