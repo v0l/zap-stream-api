@@ -58,7 +58,12 @@ public class StreamEventBuilder
         }
         else if (status == "ended")
         {
-            tags.Add(new("recording", new Uri(_config.DataHost, $"recording/{stream.Id}.m3u8").ToString()));
+            if (stream.Endpoint.Capabilities
+                .Any(a => a.StartsWith("dvr:", StringComparison.InvariantCultureIgnoreCase)))
+            {
+                tags.Add(new("recording", new Uri(_config.DataHost, $"recording/{stream.Id}.m3u8").ToString()));
+            }
+
             if (stream.Ends.HasValue)
             {
                 tags.Add(new("ends", new DateTimeOffset(stream.Ends.Value).ToUnixTimeSeconds().ToString()));
