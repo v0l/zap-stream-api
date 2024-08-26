@@ -48,6 +48,11 @@ public class StreamManagerFactory
             throw new Exception("TOS not accepted");
         }
 
+        if (user.IsBlocked)
+        {
+            throw new Exception("User account blocked");
+        }
+
         var existingLive = await _db.Streams
             .SingleOrDefaultAsync(a => a.State == UserStreamState.Live && a.PubKey == user.PubKey);
 

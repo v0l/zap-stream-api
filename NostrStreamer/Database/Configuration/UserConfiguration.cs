@@ -22,5 +22,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(a => a.Tags);
         builder.Property(a => a.ContentWarning);
         builder.Property(a => a.Goal);
+        builder.Property(a => a.IsAdmin);
+        builder.Property(a => a.IsBlocked);
     }
 }

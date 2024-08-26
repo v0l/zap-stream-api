@@ -136,7 +136,7 @@ public class NostrController : Controller
             return NotFound();
         }
 
-        if (patch.AcceptTos)
+        if (patch.AcceptTos.HasValue && patch.AcceptTos.Value)
         {
             await _userService.AcceptTos(user.PubKey);
         }
@@ -267,7 +267,7 @@ public class NostrController : Controller
         var existing = await _db.PushSubscriptions.FirstOrDefaultAsync(a => a.Key == sub.Key);
         if (existing != default)
         {
-            return Json(new { id = existing.Id });
+            return Json(new {id = existing.Id});
         }
 
         var newId = Guid.NewGuid();
@@ -298,7 +298,7 @@ public class NostrController : Controller
 
         var sub = await _db.PushSubscriptionTargets
             .Join(_db.PushSubscriptions, a => a.SubscriberPubkey, b => b.Pubkey,
-                (a, b) => new { a.SubscriberPubkey, a.TargetPubkey, b.Auth })
+                (a, b) => new {a.SubscriberPubkey, a.TargetPubkey, b.Auth})
             .Where(a => a.SubscriberPubkey == userPubkey && a.Auth == auth)
             .Select(a => a.TargetPubkey)
             .ToListAsync();

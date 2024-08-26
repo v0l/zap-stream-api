@@ -105,6 +105,7 @@ public class UserService
             await _db.Users
                 .Where(a => a.PubKey == pubkey)
                 .ExecuteUpdateAsync(p => p.SetProperty(o => o.Balance, b => b.Balance - pr.MinimumAmount.MilliSatoshi));
+
             _db.Payments.Add(new()
             {
                 PubKey = pubkey,
@@ -134,6 +135,7 @@ public class UserService
                 await _db.Users
                     .Where(a => a.PubKey == pubkey)
                     .ExecuteUpdateAsync(p => p.SetProperty(o => o.Balance, b => b.Balance - result.FeeSat));
+
                 return (result.FeeMsat, result.PaymentPreimage);
             }
 
@@ -145,6 +147,7 @@ public class UserService
             await _db.Users
                 .Where(a => a.PubKey == pubkey)
                 .ExecuteUpdateAsync(p => p.SetProperty(o => o.Balance, b => b.Balance + pr.MinimumAmount.MilliSatoshi));
+
             throw;
         }
     }
@@ -216,6 +219,18 @@ public class UserService
             .ExecuteUpdateAsync(o => o.SetProperty(v => v.TosAccepted, DateTime.UtcNow));
 
         if (change != 1) throw new Exception($"Failed to accept TOS, {change} rows updated.");
+    }
+
+    public async Task SetBlocked(string pubkey, bool val)
+    {
+        await _db.Users.Where(a => a.PubKey.Equals(pubkey))
+            .ExecuteUpdateAsync(o => o.SetProperty(v => v.IsBlocked, val));
+    }
+
+    public async Task SetAdmin(string pubkey, bool val)
+    {
+        await _db.Users.Where(a => a.PubKey.Equals(pubkey))
+            .ExecuteUpdateAsync(o => o.SetProperty(v => v.IsAdmin, val));
     }
 
     public async Task AddForward(string pubkey, string name, string dest)
