@@ -66,7 +66,7 @@ public class UserStream
     /// </summary>
     public string? ForwardClientId { get; set; }
 
-    public DateTime? LastSegment { get; set; }
+    public DateTime? LastSegment { get; set; } = DateTime.UtcNow;
 
     /// <summary>
     /// Total sats charged during this stream

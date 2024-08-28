@@ -421,7 +421,7 @@ public class NostrController : Controller
                         a.Created,
                         a.Key,
                         a.Expires,
-                        Stream = a.UserStream.Event
+                        Stream = NostrJson.Deserialize<NostrEvent>(a.UserStream.Event)
                     })
                 .ToListAsync();
 
@@ -454,7 +454,7 @@ public class NostrController : Controller
                 PubKey = userPubkey,
                 State = UserStreamState.Planned,
                 EdgeIp = string.Empty,
-                ForwardClientId = string.Empty
+                ForwardClientId = string.Empty,
             };
             newStream.PatchStream(req.Event);
             var ev = _eventBuilder.CreateStreamEvent(newStream);

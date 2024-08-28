@@ -85,6 +85,7 @@ public class StreamManagerFactory
             // resume stream, update edge forward info
             existingLive.EdgeIp = info.EdgeIp;
             existingLive.ForwardClientId = info.ClientId;
+            existingLive.EndpointId = ep.Id;
             await _db.SaveChangesAsync();
         }
 
@@ -166,7 +167,7 @@ public class StreamManagerFactory
             .FirstOrDefaultAsync(a =>
                 (a.StreamKey != default && a.StreamKey.Key == info.StreamKey) ||
                 (a.User.StreamKey.Equals(info.StreamKey) &&
-                 a.Endpoint != null && 
+                 a.Endpoint != null &&
                  a.Endpoint.App.Equals(info.App) &&
                  a.State == UserStreamState.Live));
 
