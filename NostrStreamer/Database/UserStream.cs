@@ -53,20 +53,20 @@ public class UserStream
     /// </summary>
     public string? Thumbnail { get; set; }
 
-    public Guid EndpointId { get; set; }
-    public IngestEndpoint Endpoint { get; init; } = null!;
+    public Guid? EndpointId { get; set; }
+    public IngestEndpoint? Endpoint { get; init; } = null!;
 
     /// <summary>
     /// Publisher edge IP
     /// </summary>
-    public string EdgeIp { get; set; } = null!;
+    public string? EdgeIp { get; set; }
 
     /// <summary>
     /// Publisher edge client id
     /// </summary>
-    public string ForwardClientId { get; set; } = null!;
+    public string? ForwardClientId { get; set; }
 
-    public DateTime LastSegment { get; set; } = DateTime.UtcNow;
+    public DateTime? LastSegment { get; set; }
 
     /// <summary>
     /// Total sats charged during this stream

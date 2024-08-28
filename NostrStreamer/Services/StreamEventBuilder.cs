@@ -58,8 +58,8 @@ public class StreamEventBuilder
         }
         else if (status == "ended")
         {
-            if (stream.Endpoint.Capabilities
-                .Any(a => a.StartsWith("dvr:", StringComparison.InvariantCultureIgnoreCase)))
+            if (stream.Endpoint?.Capabilities
+                    .Any(a => a.StartsWith("dvr:", StringComparison.InvariantCultureIgnoreCase)) ?? false)
             {
                 tags.Add(new("recording", new Uri(_config.DataHost, $"recording/{stream.Id}.m3u8").ToString()));
             }

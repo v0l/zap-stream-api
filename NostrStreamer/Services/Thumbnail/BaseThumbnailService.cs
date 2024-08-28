@@ -14,11 +14,13 @@ public abstract class BaseThumbnailService
         Logger = logger;
     }
 
-    protected async Task<string> GenerateThumbnail(UserStream stream)
+    protected async Task<string?> GenerateThumbnail(UserStream stream)
     {
+        if (stream.Endpoint == default) return default;
         var path = Path.ChangeExtension(Path.GetTempFileName(), ".jpg");
         var cmd = FFMpegArguments
-            .FromUrlInput(new Uri(Config.RtmpHost, $"{stream.Endpoint.App}/source/{stream.User.StreamKey}?vhost=hls.zap.stream"))
+            .FromUrlInput(new Uri(Config.RtmpHost,
+                $"{stream.Endpoint.App}/source/{stream.User.StreamKey}?vhost=hls.zap.stream"))
             .OutputToFile(path, true, o => { o.ForceFormat("image2").WithCustomArgument("-vframes 1"); })
             .CancellableThrough(new CancellationTokenSource(TimeSpan.FromSeconds(10)).Token);
 

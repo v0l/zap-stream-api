@@ -21,7 +21,8 @@ public class PlaylistController : Controller
     private readonly EdgeSteering _edgeSteering;
 
     public PlaylistController(Config config, ILogger<PlaylistController> logger,
-        HttpClient client, SrsApi srsApi, ViewCounter viewCounter, StreamManagerFactory streamManagerFactory, EdgeSteering edgeSteering)
+        HttpClient client, SrsApi srsApi, ViewCounter viewCounter, StreamManagerFactory streamManagerFactory,
+        EdgeSteering edgeSteering)
     {
         _config = config;
         _logger = logger;
@@ -34,12 +35,18 @@ public class PlaylistController : Controller
 
     [ResponseCache(Duration = 1, Location = ResponseCacheLocation.Any)]
     [HttpGet("{variant}/{id}.m3u8")]
-    public async Task RewritePlaylist([FromRoute] Guid id, [FromRoute] string variant, [FromQuery(Name = "hls_ctx")] string hlsCtx)
+    public async Task RewritePlaylist([FromRoute] Guid id, [FromRoute] string variant,
+        [FromQuery(Name = "hls_ctx")] string hlsCtx)
     {
         try
         {
             var streamManager = await _streamManagerFactory.ForStream(id);
             var userStream = streamManager.GetStream();
+            if (userStream.Endpoint == default)
+            {
+                Response.StatusCode = 404;
+                return;
+            }
 
             var path = $"/{userStream.Endpoint.App}/{variant}/{userStream.Key}.m3u8";
             var ub = new UriBuilder(_config.SrsHttpHost)
@@ -113,6 +120,11 @@ public class PlaylistController : Controller
             var edge = _edgeSteering.GetEdge(HttpContext);
             var streamManager = await _streamManagerFactory.ForStream(id);
             var userStream = streamManager.GetStream();
+            if (userStream.Endpoint == default)
+            {
+                Response.StatusCode = 404;
+                return;
+            }
 
             var hlsCtx = await GetHlsCtx(userStream);
             if (string.IsNullOrEmpty(hlsCtx))
@@ -132,18 +144,23 @@ public class PlaylistController : Controller
                 var stream = streams.FirstOrDefault(a =>
                     a.Name == userStream.Key && a.App == $"{userStream.Endpoint.App}/{variant.SourceName}");
 
-                var resArg = stream?.Video != default ? $"RESOLUTION={stream.Video?.Width}x{stream.Video?.Height}" :
-                    variant.ToResolutionArg();
+                var resArg = stream?.Video != default
+                    ? $"RESOLUTION={stream.Video?.Width}x{stream.Video?.Height}"
+                    : variant.ToResolutionArg();
 
                 var bandwidthArg = variant.ToBandwidthArg();
 
-                var averageBandwidthArg = stream?.Kbps?.Recv30s.HasValue ?? false ? $"AVERAGE-BANDWIDTH={stream.Kbps.Recv30s * 1000}" : "";
+                var averageBandwidthArg = stream?.Kbps?.Recv30s.HasValue ?? false
+                    ? $"AVERAGE-BANDWIDTH={stream.Kbps.Recv30s * 1000}"
+                    : "";
                 var codecArg = "CODECS=\"avc1.640028,mp4a.40.2\"";
-                var allArgs = new[] {bandwidthArg, averageBandwidthArg, resArg, codecArg}.Where(a => !string.IsNullOrEmpty(a));
+                var allArgs =
+                    new[] { bandwidthArg, averageBandwidthArg, resArg, codecArg }.Where(a => !string.IsNullOrEmpty(a));
                 await sw.WriteLineAsync(
                     $"#EXT-X-STREAM-INF:{string.Join(",", allArgs)}");
 
-                var path = $"{variant.SourceName}/{userStream.Id}.m3u8{(!string.IsNullOrEmpty(hlsCtx) ? $"?hls_ctx={hlsCtx}" : "")}";
+                var path =
+                    $"{variant.SourceName}/{userStream.Id}.m3u8{(!string.IsNullOrEmpty(hlsCtx) ? $"?hls_ctx={hlsCtx}" : "")}";
                 if (edge != default)
                 {
                     var u = new Uri(edge.Url, path);
@@ -170,6 +187,11 @@ public class PlaylistController : Controller
         {
             var streamManager = await _streamManagerFactory.ForStream(id);
             var userStream = streamManager.GetStream();
+            if (userStream.Endpoint == default)
+            {
+                Response.StatusCode = 404;
+                return;
+            }
 
             var path = $"/{userStream.Endpoint.App}/{variant}/{userStream.Key}-{segment}";
             await ProxyRequest(path);
@@ -253,6 +275,8 @@ public class PlaylistController : Controller
 
     private async Task<string?> GetHlsCtx(UserStream stream)
     {
+        if (stream.Endpoint == default) return default;
+
         var path = $"/{stream.Endpoint.App}/source/{stream.Key}.m3u8";
         var ub = new Uri(_config.SrsHttpHost, path);
         var req = CreateProxyRequest(ub);
@@ -292,9 +316,11 @@ public class PlaylistController : Controller
     private HttpRequestMessage CreateProxyRequest(Uri u)
     {
         var req = new HttpRequestMessage(HttpMethod.Get, u);
-        if (Request.Headers.TryGetValue("X-Forwarded-For", out var xff) || HttpContext.Connection.RemoteIpAddress != default)
+        if (Request.Headers.TryGetValue("X-Forwarded-For", out var xff) ||
+            HttpContext.Connection.RemoteIpAddress != default)
         {
-            req.Headers.Add("X-Forwarded-For", xff.Count > 0 ? xff.ToString() : HttpContext.Connection.RemoteIpAddress!.ToString());
+            req.Headers.Add("X-Forwarded-For",
+                xff.Count > 0 ? xff.ToString() : HttpContext.Connection.RemoteIpAddress!.ToString());
         }
 
         return req;

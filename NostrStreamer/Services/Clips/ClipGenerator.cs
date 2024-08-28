@@ -47,6 +47,7 @@ public class ClipGenerator
     public async Task<List<ClipSegment>> GetClipSegments(UserStream stream)
     {
         var ret = new List<ClipSegment>();
+        if (stream.Endpoint == default) return ret;
         var ctx = await GetHlsCtx(stream);
         var path = $"/{stream.Endpoint.App}/source/{stream.User.StreamKey}.m3u8?hls_ctx={ctx}";
         var ub = new Uri(_config.SrsHttpHost, path);
@@ -89,6 +90,7 @@ public class ClipGenerator
 
     private async Task<string?> GetHlsCtx(UserStream stream)
     {
+        if (stream.Endpoint == default) return null;
         var path = $"/{stream.Endpoint.App}/source/{stream.User.StreamKey}.m3u8";
         var ub = new Uri(_config.SrsHttpHost, path);
         var req = new HttpRequestMessage(HttpMethod.Get, ub);

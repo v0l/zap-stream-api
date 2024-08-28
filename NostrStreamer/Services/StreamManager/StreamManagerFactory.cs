@@ -166,6 +166,7 @@ public class StreamManagerFactory
             .FirstOrDefaultAsync(a =>
                 (a.StreamKey != default && a.StreamKey.Key == info.StreamKey) ||
                 (a.User.StreamKey.Equals(info.StreamKey) &&
+                 a.Endpoint != null && 
                  a.Endpoint.App.Equals(info.App) &&
                  a.State == UserStreamState.Live));
 

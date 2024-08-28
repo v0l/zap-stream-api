@@ -146,7 +146,7 @@ public class LndNode
         {
             req.Memo = decoded.ShortDescription;
         }
-        else if (decoded.DescriptionHash != default)
+        else if (decoded.DescriptionHash != null)
         {
             req.DescriptionHash = ByteString.CopyFrom(decoded.DescriptionHash.ToBytes(false));
         }

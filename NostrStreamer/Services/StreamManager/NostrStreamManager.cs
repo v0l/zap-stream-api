@@ -55,10 +55,12 @@ public class NostrStreamManager : IStreamManager
     public Task<List<string>> OnForward()
     {
         TestCanStream();
-        var fwds = new List<string>
+        var fwds = new List<string>();
+        if (_context.UserStream.Endpoint != default)
         {
-            $"rtmp://127.0.0.1:1935/{_context.UserStream.Endpoint.App}/{_context.StreamKey}?vhost={_context.UserStream.Endpoint.Forward}"
-        };
+            fwds.Add(
+                $"rtmp://127.0.0.1:1935/{_context.UserStream.Endpoint.App}/{_context.StreamKey}?vhost={_context.UserStream.Endpoint.Forward}");
+        }
 
         var dataProtector = _dataProtectionProvider.CreateProtector("forward-targets");
         foreach (var f in _context.User.Forwards)
@@ -125,6 +127,8 @@ public class NostrStreamManager : IStreamManager
     public async Task ConsumeQuota(double duration)
     {
         const long balanceAlertThreshold = 500_000;
+
+        if (_context.UserStream.Endpoint == default) return;
         var cost = (long)Math.Ceiling(_context.UserStream.Endpoint.Cost * (duration / 60d));
         if (cost > 0)
         {
@@ -165,7 +169,10 @@ public class NostrStreamManager : IStreamManager
         if (_context.User.Balance <= 0)
         {
             _logger.LogInformation("Kicking stream due to low balance");
-            await _context.EdgeApi.KickClient(_context.UserStream.ForwardClientId);
+            if (!string.IsNullOrEmpty(_context.UserStream.ForwardClientId))
+            {
+                await _context.EdgeApi.KickClient(_context.UserStream.ForwardClientId);
+            }
         }
     }
 
@@ -195,7 +202,7 @@ public class NostrStreamManager : IStreamManager
 
         try
         {
-            if (_context.UserStream.Endpoint.Capabilities.Contains("dvr:source"))
+            if (_context.UserStream.Endpoint?.Capabilities.Contains("dvr:source") ?? false)
             {
                 var result = await _dvrStore.UploadRecording(_context.UserStream, segment);
                 _context.Db.Recordings.Add(new()
