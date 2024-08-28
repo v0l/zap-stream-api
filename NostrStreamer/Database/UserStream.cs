@@ -54,7 +54,7 @@ public class UserStream
     public string? Thumbnail { get; set; }
 
     public Guid? EndpointId { get; set; }
-    public IngestEndpoint? Endpoint { get; init; } = null!;
+    public IngestEndpoint? Endpoint { get; init; }
 
     /// <summary>
     /// Publisher edge IP
