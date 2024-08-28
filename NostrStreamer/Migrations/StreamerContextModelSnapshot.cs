@@ -187,15 +187,6 @@ namespace NostrStreamer.Migrations
                     b.Property<long>("Balance")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("ContentWarning")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Goal")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Image")
-                        .HasColumnType("text");
-
                     b.Property<bool>("IsAdmin")
                         .HasColumnType("boolean");
 
@@ -204,15 +195,6 @@ namespace NostrStreamer.Migrations
 
                     b.Property<string>("StreamKey")
                         .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Summary")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Tags")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Title")
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("TosAccepted")

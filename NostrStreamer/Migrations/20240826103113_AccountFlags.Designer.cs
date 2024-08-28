@@ -168,15 +168,6 @@ namespace NostrStreamer.Migrations
                     b.Property<long>("Balance")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("ContentWarning")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Goal")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Image")
-                        .HasColumnType("text");
-
                     b.Property<bool>("IsAdmin")
                         .HasColumnType("boolean");
 
@@ -185,15 +176,6 @@ namespace NostrStreamer.Migrations
 
                     b.Property<string>("StreamKey")
                         .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Summary")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Tags")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Title")
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("TosAccepted")
@@ -220,12 +202,21 @@ namespace NostrStreamer.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("ContentWarning")
+                        .HasColumnType("text");
+
                     b.Property<Guid>("EndpointId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("Ends")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Goal")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Image")
+                        .HasColumnType("text");
+                    
                     b.Property<string>("Event")
                         .IsRequired()
                         .HasColumnType("text");
@@ -257,7 +248,16 @@ namespace NostrStreamer.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Summary")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Tags")
+                        .HasColumnType("text");
+
                     b.Property<string>("Thumbnail")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
                         .HasColumnType("text");
 
                     b.HasKey("Id");

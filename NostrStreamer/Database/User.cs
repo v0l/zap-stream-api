@@ -15,39 +15,9 @@ public class User
     public long Balance { get; set; }
 
     /// <summary>
-    /// Stream title
-    /// </summary>
-    public string? Title { get; set; }
-
-    /// <summary>
-    /// Stream summary
-    /// </summary>
-    public string? Summary { get; set; }
-
-    /// <summary>
-    /// Stream cover image
-    /// </summary>
-    public string? Image { get; set; }
-
-    /// <summary>
-    /// Comma seperated tags
-    /// </summary>
-    public string? Tags { get; set; }
-
-    /// <summary>
-    /// Any content warning tag (NIP-36)
-    /// </summary>
-    public string? ContentWarning { get; set; }
-
-    /// <summary>
     /// Date when user accepted TOS
     /// </summary>
     public DateTime? TosAccepted { get; init; }
-
-    /// <summary>
-    /// Stream goal
-    /// </summary>
-    public string? Goal { get; init; }
 
     /// <summary>
     /// Concurrency token
