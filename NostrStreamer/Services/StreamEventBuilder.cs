@@ -22,7 +22,7 @@ public class StreamEventBuilder
         _nostrClient = nostrClient;
     }
 
-    public NostrEvent CreateStreamEvent(User user, UserStream stream)
+    public NostrEvent CreateStreamEvent(UserStream stream)
     {
         var status = stream.State switch
         {
@@ -35,11 +35,11 @@ public class StreamEventBuilder
         var tags = new List<NostrEventTag>
         {
             new("d", stream.Id.ToString()),
-            new("title", user.Title ?? ""),
-            new("summary", user.Summary ?? ""),
-            new("image", stream.Thumbnail ?? user.Image ?? ""),
+            new("title", stream.Title ?? ""),
+            new("summary", stream.Summary ?? ""),
+            new("image", stream.Thumbnail ?? stream.Image ?? ""),
             new("status", status),
-            new("p", user.PubKey, "", "host"),
+            new("p", stream.PubKey, "wss://relay.zap.stream", "host"),
             new("relays", _config.Relays),
             new("starts", new DateTimeOffset(stream.Starts).ToUnixTimeSeconds().ToString()),
             new("service", new Uri(_config.ApiHost, "/api/nostr").ToString())
@@ -51,9 +51,9 @@ public class StreamEventBuilder
             tags.Add(new("streaming", new Uri(_config.DataHost, $"stream/{stream.Id}.m3u8").ToString()));
             tags.Add(new("current_participants", viewers.ToString()));
 
-            if (!string.IsNullOrEmpty(user.ContentWarning))
+            if (!string.IsNullOrEmpty(stream.ContentWarning))
             {
-                tags.Add(new("content-warning", user.ContentWarning));
+                tags.Add(new("content-warning", stream.ContentWarning));
             }
         }
         else if (status == "ended")
@@ -70,14 +70,14 @@ public class StreamEventBuilder
             }
         }
 
-        foreach (var tag in user.SplitTags())
+        foreach (var tag in stream.SplitTags())
         {
             tags.Add(new("t", tag));
         }
 
-        if (!string.IsNullOrEmpty(user.Goal))
+        if (!string.IsNullOrEmpty(stream.Goal))
         {
-            tags.Add(new("goal", user.Goal));
+            tags.Add(new("goal", stream.Goal));
         }
 
         var ev = new NostrEvent

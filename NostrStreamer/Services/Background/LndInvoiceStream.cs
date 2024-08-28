@@ -72,7 +72,7 @@ public class LndInvoicesStream : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Subscribe invoices failed");
+                //_logger.LogError(ex, "Subscribe invoices failed");
             }
 
             await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);

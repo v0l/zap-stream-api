@@ -41,7 +41,7 @@ public class PlaylistController : Controller
             var streamManager = await _streamManagerFactory.ForStream(id);
             var userStream = streamManager.GetStream();
 
-            var path = $"/{userStream.Endpoint.App}/{variant}/{userStream.User.StreamKey}.m3u8";
+            var path = $"/{userStream.Endpoint.App}/{variant}/{userStream.Key}.m3u8";
             var ub = new UriBuilder(_config.SrsHttpHost)
             {
                 Path = path,
@@ -130,7 +130,7 @@ public class PlaylistController : Controller
             foreach (var variant in userStream.Endpoint.GetVariants().OrderBy(a => a.Bandwidth))
             {
                 var stream = streams.FirstOrDefault(a =>
-                    a.Name == userStream.User.StreamKey && a.App == $"{userStream.Endpoint.App}/{variant.SourceName}");
+                    a.Name == userStream.Key && a.App == $"{userStream.Endpoint.App}/{variant.SourceName}");
 
                 var resArg = stream?.Video != default ? $"RESOLUTION={stream.Video?.Width}x{stream.Video?.Height}" :
                     variant.ToResolutionArg();
@@ -171,7 +171,7 @@ public class PlaylistController : Controller
             var streamManager = await _streamManagerFactory.ForStream(id);
             var userStream = streamManager.GetStream();
 
-            var path = $"/{userStream.Endpoint.App}/{variant}/{userStream.User.StreamKey}-{segment}";
+            var path = $"/{userStream.Endpoint.App}/{variant}/{userStream.Key}-{segment}";
             await ProxyRequest(path);
         }
         catch
@@ -253,7 +253,7 @@ public class PlaylistController : Controller
 
     private async Task<string?> GetHlsCtx(UserStream stream)
     {
-        var path = $"/{stream.Endpoint.App}/source/{stream.User.StreamKey}.m3u8";
+        var path = $"/{stream.Endpoint.App}/source/{stream.Key}.m3u8";
         var ub = new Uri(_config.SrsHttpHost, path);
         var req = CreateProxyRequest(ub);
         using var rsp = await _client.SendAsync(req);

@@ -7,14 +7,42 @@ public class UserStream
     public string PubKey { get; init; } = null!;
     public User User { get; init; } = null!;
 
-    public string StreamId { get; init; } = null!;
-
     public DateTime Starts { get; init; } = DateTime.UtcNow;
 
     public DateTime? Ends { get; set; }
 
     public UserStreamState State { get; set; }
 
+    /// <summary>
+    /// Stream title
+    /// </summary>
+    public string? Title { get; set; }
+
+    /// <summary>
+    /// Stream summary
+    /// </summary>
+    public string? Summary { get; set; }
+
+    /// <summary>
+    /// Stream cover image
+    /// </summary>
+    public string? Image { get; set; }
+
+    /// <summary>
+    /// Comma seperated tags
+    /// </summary>
+    public string? Tags { get; set; }
+
+    /// <summary>
+    /// Any content warning tag (NIP-36)
+    /// </summary>
+    public string? ContentWarning { get; set; }
+
+    /// <summary>
+    /// Stream goal
+    /// </summary>
+    public string? Goal { get; set; }
+    
     /// <summary>
     /// Nostr Event for this stream
     /// </summary>
@@ -25,7 +53,7 @@ public class UserStream
     /// </summary>
     public string? Thumbnail { get; set; }
 
-    public Guid EndpointId { get; init; }
+    public Guid EndpointId { get; set; }
     public IngestEndpoint Endpoint { get; init; } = null!;
 
     /// <summary>
@@ -58,10 +86,15 @@ public class UserStream
     public List<UserStreamGuest> Guests { get; init; } = new();
 
     public List<UserStreamRecording> Recordings { get; init; } = new();
+
+    public UserStreamKey? StreamKey { get; init; }
+
+    public string Key => StreamKey?.Key ?? User.StreamKey;
 }
 
 public enum UserStreamState
 {
+    Unknown = 0,
     Planned = 1,
     Live = 2,
     Ended = 3

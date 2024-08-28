@@ -67,4 +67,5 @@ public class User
     public List<Payment> Payments { get; init; } = new();
     public List<UserStream> Streams { get; init; } = new();
     public List<UserStreamForwards> Forwards { get; init; } = new();
+    public List<UserStreamKey> StreamKeys { get; init; } = new();
 }

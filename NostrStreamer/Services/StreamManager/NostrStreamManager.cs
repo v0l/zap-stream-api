@@ -57,7 +57,7 @@ public class NostrStreamManager : IStreamManager
         TestCanStream();
         var fwds = new List<string>
         {
-            $"rtmp://127.0.0.1:1935/{_context.UserStream.Endpoint.App}/{_context.User.StreamKey}?vhost={_context.UserStream.Endpoint.Forward}"
+            $"rtmp://127.0.0.1:1935/{_context.UserStream.Endpoint.App}/{_context.StreamKey}?vhost={_context.UserStream.Endpoint.Forward}"
         };
 
         var dataProtector = _dataProtectionProvider.CreateProtector("forward-targets");
@@ -103,7 +103,6 @@ public class NostrStreamManager : IStreamManager
                 }
             }
         });
-        
     }
 
     public async Task StreamStopped()
@@ -194,20 +193,27 @@ public class NostrStreamManager : IStreamManager
     {
         //var matches = new Regex("\\.(\\d+)\\.[\\w]{2,4}$").Match(segment.AbsolutePath);
 
-        if (_context.UserStream.Endpoint.Capabilities.Contains("dvr:source"))
+        try
         {
-            var result = await _dvrStore.UploadRecording(_context.UserStream, segment);
-            _context.Db.Recordings.Add(new()
+            if (_context.UserStream.Endpoint.Capabilities.Contains("dvr:source"))
             {
-                Id = result.Id,
-                UserStreamId = _context.UserStream.Id,
-                Url = result.Result.ToString(),
-                Duration = result.Duration,
-                Timestamp = DateTime
-                    .UtcNow //DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(matches.Groups[1].Value)).UtcDateTime
-            });
+                var result = await _dvrStore.UploadRecording(_context.UserStream, segment);
+                _context.Db.Recordings.Add(new()
+                {
+                    Id = result.Id,
+                    UserStreamId = _context.UserStream.Id,
+                    Url = result.Result.ToString(),
+                    Duration = result.Duration,
+                    Timestamp = DateTime
+                        .UtcNow //DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(matches.Groups[1].Value)).UtcDateTime
+                });
 
-            await _context.Db.SaveChangesAsync();
+                await _context.Db.SaveChangesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Failed to save recording segment {}, {}", segment, ex.Message);
         }
 
         await _context.Db.Streams
@@ -242,7 +248,7 @@ public class NostrStreamManager : IStreamManager
         var existingEvent = _context.UserStream.GetEvent();
         var oldViewers = existingEvent?.Tags?.FindFirstTagValue("current_participants");
 
-        var newEvent = _eventBuilder.CreateStreamEvent(_context.User, _context.UserStream);
+        var newEvent = _eventBuilder.CreateStreamEvent(_context.UserStream);
         var newViewers = newEvent?.Tags?.FindFirstTagValue("current_participants");
 
         if (newEvent != default && int.TryParse(oldViewers, out var a) && int.TryParse(newViewers, out var b) && a != b)
@@ -260,7 +266,7 @@ public class NostrStreamManager : IStreamManager
         DateTime? ends = state == UserStreamState.Ended ? DateTime.UtcNow : null;
         _context.UserStream.State = state;
         _context.UserStream.Ends = ends;
-        var ev = _eventBuilder.CreateStreamEvent(_context.User, _context.UserStream);
+        var ev = _eventBuilder.CreateStreamEvent(_context.UserStream);
 
         await _context.Db.Streams.Where(a => a.Id == _context.UserStream.Id)
             .ExecuteUpdateAsync(o => o.SetProperty(v => v.State, state)

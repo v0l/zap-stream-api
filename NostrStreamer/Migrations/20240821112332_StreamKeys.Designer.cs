@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NostrStreamer.Database;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NostrStreamer.Migrations
 {
     [DbContext(typeof(StreamerContext))]
-    partial class StreamerContextModelSnapshot : ModelSnapshot
+    [Migration("20240821112332_StreamKeys")]
+    partial class StreamKeys
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -196,12 +199,6 @@ namespace NostrStreamer.Migrations
                     b.Property<string>("Image")
                         .HasColumnType("text");
 
-                    b.Property<bool>("IsAdmin")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsBlocked")
-                        .HasColumnType("boolean");
-
                     b.Property<string>("StreamKey")
                         .IsRequired()
                         .HasColumnType("text");
@@ -238,9 +235,6 @@ namespace NostrStreamer.Migrations
                     b.Property<decimal?>("AdmissionCost")
                         .HasColumnType("numeric");
 
-                    b.Property<string>("ContentWarning")
-                        .HasColumnType("text");
-
                     b.Property<string>("EdgeIp")
                         .IsRequired()
                         .HasColumnType("text");
@@ -257,12 +251,6 @@ namespace NostrStreamer.Migrations
 
                     b.Property<string>("ForwardClientId")
                         .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Goal")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Image")
                         .HasColumnType("text");
 
                     b.Property<DateTime>("LastSegment")
@@ -284,16 +272,11 @@ namespace NostrStreamer.Migrations
                     b.Property<int>("State")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Summary")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Tags")
+                    b.Property<string>("StreamId")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Thumbnail")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Title")
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -402,8 +385,7 @@ namespace NostrStreamer.Migrations
                     b.Property<DateTime?>("Expires")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Key")
-                        .IsRequired()
+                    b.Property<Guid>("Key")
                         .HasColumnType("text");
 
                     b.Property<Guid>("StreamId")
@@ -526,7 +508,7 @@ namespace NostrStreamer.Migrations
             modelBuilder.Entity("NostrStreamer.Database.UserStreamKey", b =>
                 {
                     b.HasOne("NostrStreamer.Database.UserStream", "UserStream")
-                        .WithOne("StreamKey")
+                        .WithOne()
                         .HasForeignKey("NostrStreamer.Database.UserStreamKey", "StreamId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -569,8 +551,6 @@ namespace NostrStreamer.Migrations
                     b.Navigation("Guests");
 
                     b.Navigation("Recordings");
-
-                    b.Navigation("StreamKey");
                 });
 #pragma warning restore 612, 618
         }

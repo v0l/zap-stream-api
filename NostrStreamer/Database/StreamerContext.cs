@@ -37,4 +37,6 @@ public class StreamerContext : DbContext
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
 
     public DbSet<PushSubscriptionTarget> PushSubscriptionTargets => Set<PushSubscriptionTarget>();
+
+    public DbSet<UserStreamKey> StreamKeys => Set<UserStreamKey>();
 }

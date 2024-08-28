@@ -27,10 +27,12 @@ public class NostrController : Controller
     private readonly IClipService _clipService;
     private readonly ILogger<NostrController> _logger;
     private readonly PushSender _pushSender;
+    private readonly StreamEventBuilder _eventBuilder;
 
     public NostrController(StreamerContext db, Config config, StreamManagerFactory streamManager,
         UserService userService,
-        IClipService clipService, ILogger<NostrController> logger, PushSender pushSender)
+        IClipService clipService, ILogger<NostrController> logger, PushSender pushSender,
+        StreamEventBuilder eventBuilder)
     {
         _db = db;
         _config = config;
@@ -39,6 +41,7 @@ public class NostrController : Controller
         _clipService = clipService;
         _logger = logger;
         _pushSender = pushSender;
+        _eventBuilder = eventBuilder;
     }
 
     [HttpGet("account")]
@@ -57,15 +60,6 @@ public class NostrController : Controller
 
         var account = new Account
         {
-            Event = new PatchEvent()
-            {
-                Title = user.Title ?? "",
-                Summary = user.Summary ?? "",
-                Image = user.Image ?? "",
-                ContentWarning = user.ContentWarning,
-                Tags = user.SplitTags(),
-                Goal = user.Goal
-            },
             Endpoints = endpoints.Select(a => new AccountEndpoint
             {
                 Name = a.Name,
@@ -100,9 +94,9 @@ public class NostrController : Controller
         var pubkey = GetPubKey();
         if (string.IsNullOrEmpty(pubkey)) return Unauthorized();
 
-        await _userService.UpdateStreamInfo(pubkey, req);
         try
         {
+            await _userService.UpdateStreamInfo(pubkey, req);
             var streamManager = await _streamManagerFactory.ForCurrentStream(pubkey);
             await streamManager.UpdateEvent();
         }
@@ -393,6 +387,91 @@ public class NostrController : Controller
             {
                 items = txns,
                 page, pageSize
+            });
+        }
+        catch (Exception e)
+        {
+            return Json(new
+            {
+                error = e.Message
+            });
+        }
+    }
+
+
+    [HttpGet("keys")]
+    public async Task<IActionResult> ListStreamKeys([FromQuery] int page = 0, [FromQuery] int pageSize = 100)
+    {
+        var userPubkey = GetPubKey();
+        if (string.IsNullOrEmpty(userPubkey))
+            return BadRequest();
+
+        try
+        {
+            var keys = await _db.StreamKeys
+                .AsNoTracking()
+                .Include(a => a.UserStream)
+                .Where(a => a.UserPubkey == userPubkey)
+                .Skip(page * pageSize)
+                .Take(pageSize)
+                .Select(a =>
+                    new
+                    {
+                        a.Id,
+                        a.Created,
+                        a.Key,
+                        a.Expires,
+                        Stream = a.UserStream.Event
+                    })
+                .ToListAsync();
+
+            return Json(new
+            {
+                items = keys,
+                page, pageSize
+            });
+        }
+        catch (Exception e)
+        {
+            return Json(new
+            {
+                error = e.Message
+            });
+        }
+    }
+
+    [HttpPost("keys")]
+    public async Task<IActionResult> CreateStreamKey([FromBody] CreateStreamKeyRequest req)
+    {
+        var userPubkey = GetPubKey();
+        if (string.IsNullOrEmpty(userPubkey))
+            return BadRequest();
+
+        try
+        {
+            var newStream = new UserStream()
+            {
+                PubKey = userPubkey,
+                State = UserStreamState.Planned,
+            };
+            newStream.PatchStream(req.Event);
+            var ev = _eventBuilder.CreateStreamEvent(newStream);
+            newStream.Event = NostrJson.Serialize(ev) ?? "";
+
+            var newKey = new UserStreamKey()
+            {
+                Expires = req.Expires,
+                Key = Guid.NewGuid().ToString(),
+                StreamId = newStream.Id,
+                UserPubkey = userPubkey
+            };
+            _db.Streams.Add(newStream);
+            _db.StreamKeys.Add(newKey);
+            await _db.SaveChangesAsync();
+            return Json(new
+            {
+                newKey.Key,
+                newStream.Event
             });
         }
         catch (Exception e)

@@ -4,6 +4,9 @@ namespace NostrStreamer.ApiModel;
 
 public class PatchEvent
 {
+    [JsonProperty("id")]
+    public Guid Id { get; init; }
+    
     [JsonProperty("title")]
     public string Title { get; init; } = null!;
     

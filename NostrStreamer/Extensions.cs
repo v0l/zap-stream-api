@@ -3,6 +3,7 @@ using Amazon.Runtime;
 using Amazon.S3;
 using Igdb;
 using MaxMind.GeoIP2;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Nostr.Client.Identifiers;
 using Nostr.Client.Json;
@@ -49,10 +50,11 @@ public static class Extensions
             });
     }
 
-    public static string[] SplitTags(this User user)
+    public static string[] SplitTags(this UserStream stream)
     {
-        return !string.IsNullOrEmpty(user.Tags) ?
-            user.Tags.Split(",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) : Array.Empty<string>();
+        return !string.IsNullOrEmpty(stream.Tags)
+            ? stream.Tags.Split(",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            : Array.Empty<string>();
     }
 
     public static (double lat, double lon)? GetLocation(this HttpContext ctx, IGeoIP2DatabaseReader db)
@@ -90,14 +92,16 @@ public static class Extensions
         var num1 = longitude * (Math.PI / 180.0);
         var d2 = otherLatitude * (Math.PI / 180.0);
         var num2 = otherLongitude * (Math.PI / 180.0) - num1;
-        var d3 = Math.Pow(Math.Sin((d2 - d1) / 2.0), 2.0) + Math.Cos(d1) * Math.Cos(d2) * Math.Pow(Math.Sin(num2 / 2.0), 2.0);
+        var d3 = Math.Pow(Math.Sin((d2 - d1) / 2.0), 2.0) +
+                 Math.Cos(d1) * Math.Cos(d2) * Math.Pow(Math.Sin(num2 / 2.0), 2.0);
 
         return 6376500.0 * (2.0 * Math.Atan2(Math.Sqrt(d3), Math.Sqrt(1.0 - d3)));
     }
 
     public static string GetHost(this NostrEvent ev)
     {
-        var hostTag = ev.Tags!.FirstOrDefault(a => a.TagIdentifier == "p" && a.AdditionalData[2] == "host")?.AdditionalData[0];
+        var hostTag = ev.Tags!.FirstOrDefault(a => a.TagIdentifier == "p" && a.AdditionalData[2] == "host")
+            ?.AdditionalData[0];
         if (!string.IsNullOrEmpty(hostTag))
         {
             return hostTag;
@@ -105,7 +109,7 @@ public static class Extensions
 
         return ev.Pubkey!;
     }
-    
+
     public static NostrIdentifier ToIdentifier(this NostrEvent ev)
     {
         if ((long)ev.Kind is >= 30_000 and < 40_000)
@@ -131,6 +135,33 @@ public static class Extensions
             Cover = $"https://images.igdb.com/igdb/image/upload/t_cover_big_2x/{a.Cover?.ImageId}.jpg",
             Genres = a.Genres.Select(b => b.Name).ToList()
         };
+    }
+
+    public static async Task CopyLastStreamDetails(this UserStream stream, StreamerContext db)
+    {
+        var lastStream = await db.Streams
+            .AsNoTracking()
+            .Where(a => a.PubKey == stream.PubKey)
+            .OrderByDescending(a => a.Starts)
+            .FirstOrDefaultAsync();
+
+
+        stream.Title = lastStream?.Title;
+        stream.Summary = lastStream?.Summary;
+        stream.Image = lastStream?.Image;
+        stream.ContentWarning = lastStream?.ContentWarning;
+        stream.Tags = lastStream?.Tags;
+        stream.Goal = lastStream?.Goal;
+    }
+
+    public static void PatchStream(this UserStream stream, PatchEvent ev)
+    {
+        stream.Title = ev.Title;
+        stream.Summary = ev.Summary;
+        stream.Image = ev.Image;
+        stream.ContentWarning = ev.ContentWarning;
+        stream.Tags = ev.Tags.Length > 0 ? string.Join(',', ev.Tags) : null;
+        stream.Goal = ev.Goal;
     }
 }
 
@@ -161,7 +192,8 @@ public class Variant
         }
 
         var strSplit = str.Split(":");
-        if (strSplit.Length != 3 || !int.TryParse(strSplit[1][..^1], out var h) || !int.TryParse(strSplit[2], out var b))
+        if (strSplit.Length != 3 || !int.TryParse(strSplit[1][..^1], out var h) ||
+            !int.TryParse(strSplit[2], out var b))
         {
             throw new FormatException();
         }

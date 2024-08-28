@@ -28,7 +28,9 @@ public class StreamManagerFactory
         var user = await _db.Users
             .AsNoTracking()
             .Include(a => a.Forwards)
-            .SingleOrDefaultAsync(a => a.StreamKey.Equals(info.StreamKey));
+            .Include(user => user.StreamKeys)
+            .SingleOrDefaultAsync(a =>
+                a.StreamKey.Equals(info.StreamKey) || a.StreamKeys.Any(b => b.Key == info.StreamKey));
 
         if (user == default) throw new Exception("No user found");
 
@@ -53,24 +55,28 @@ public class StreamManagerFactory
             throw new Exception("User account blocked");
         }
 
-        var existingLive = await _db.Streams
-            .SingleOrDefaultAsync(a => a.State == UserStreamState.Live && a.PubKey == user.PubKey);
+        var singleUseKey = user.StreamKeys.FirstOrDefault(a => a.Key == info.StreamKey);
+
+        var existingLive = singleUseKey != default
+            ? await _db.Streams.SingleOrDefaultAsync(a => a.Id == singleUseKey.StreamId)
+            : await _db.Streams
+                .SingleOrDefaultAsync(a => a.State == UserStreamState.Live && a.PubKey == user.PubKey);
 
         var stream = existingLive ?? new UserStream
         {
             EndpointId = ep.Id,
             PubKey = user.PubKey,
-            StreamId = "",
             State = UserStreamState.Live,
             EdgeIp = info.EdgeIp,
-            ForwardClientId = info.ClientId
+            ForwardClientId = info.ClientId,
         };
 
         // add new stream
         if (existingLive == default)
         {
-            var ev = _eventBuilder.CreateStreamEvent(user, stream);
-            stream.Event = JsonConvert.SerializeObject(ev, NostrSerializer.Settings);
+            await stream.CopyLastStreamDetails(_db);
+            var ev = _eventBuilder.CreateStreamEvent(stream);
+            stream.Event = NostrJson.Serialize(ev) ?? "";
             _db.Streams.Add(stream);
             await _db.SaveChangesAsync();
         }
@@ -85,18 +91,19 @@ public class StreamManagerFactory
         var ctx = new StreamManagerContext
         {
             Db = _db,
+            StreamKey = info.StreamKey,
             UserStream = new()
             {
                 Id = stream.Id,
                 PubKey = stream.PubKey,
-                StreamId = stream.StreamId,
                 State = stream.State,
                 EdgeIp = stream.EdgeIp,
                 ForwardClientId = stream.ForwardClientId,
                 Endpoint = ep,
                 User = user
             },
-            EdgeApi = new SrsApi(_serviceProvider.GetRequiredService<HttpClient>(), new Uri($"http://{stream.EdgeIp}:1985"))
+            EdgeApi = new SrsApi(_serviceProvider.GetRequiredService<HttpClient>(),
+                new Uri($"http://{stream.EdgeIp}:1985"))
         };
 
         return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _serviceProvider);
@@ -108,6 +115,7 @@ public class StreamManagerFactory
             .AsNoTracking()
             .Include(a => a.User)
             .Include(a => a.Endpoint)
+            .Include(a => a.StreamKey)
             .FirstOrDefaultAsync(a => a.Id == id);
 
         if (stream == default) throw new Exception("No live stream");
@@ -115,8 +123,10 @@ public class StreamManagerFactory
         var ctx = new StreamManagerContext
         {
             Db = _db,
+            StreamKey = stream.StreamKey?.Key ?? stream.User.StreamKey,
             UserStream = stream,
-            EdgeApi = new SrsApi(_serviceProvider.GetRequiredService<HttpClient>(), new Uri($"http://{stream.EdgeIp}:1985"))
+            EdgeApi = new SrsApi(_serviceProvider.GetRequiredService<HttpClient>(),
+                new Uri($"http://{stream.EdgeIp}:1985"))
         };
 
         return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _serviceProvider);
@@ -128,6 +138,7 @@ public class StreamManagerFactory
             .AsNoTracking()
             .Include(a => a.User)
             .Include(a => a.Endpoint)
+            .Include(a => a.StreamKey)
             .FirstOrDefaultAsync(a => a.PubKey.Equals(pubkey) && a.State == UserStreamState.Live);
 
         if (stream == default) throw new Exception("No live stream");
@@ -135,8 +146,10 @@ public class StreamManagerFactory
         var ctx = new StreamManagerContext
         {
             Db = _db,
+            StreamKey = stream.StreamKey?.Key ?? stream.User.StreamKey,
             UserStream = stream,
-            EdgeApi = new SrsApi(_serviceProvider.GetRequiredService<HttpClient>(), new Uri($"http://{stream.EdgeIp}:1985"))
+            EdgeApi = new SrsApi(_serviceProvider.GetRequiredService<HttpClient>(),
+                new Uri($"http://{stream.EdgeIp}:1985"))
         };
 
         return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _serviceProvider);
@@ -148,11 +161,13 @@ public class StreamManagerFactory
             .AsNoTracking()
             .Include(a => a.User)
             .Include(a => a.Endpoint)
+            .Include(a => a.StreamKey)
             .OrderByDescending(a => a.Starts)
             .FirstOrDefaultAsync(a =>
-                a.User.StreamKey.Equals(info.StreamKey) &&
-                a.Endpoint.App.Equals(info.App) &&
-                a.State == UserStreamState.Live);
+                (a.StreamKey != default && a.StreamKey.Key == info.StreamKey) ||
+                (a.User.StreamKey.Equals(info.StreamKey) &&
+                 a.Endpoint.App.Equals(info.App) &&
+                 a.State == UserStreamState.Live));
 
         if (stream == default)
         {
@@ -162,9 +177,11 @@ public class StreamManagerFactory
         var ctx = new StreamManagerContext
         {
             Db = _db,
+            StreamKey = info.StreamKey,
             UserStream = stream,
             StreamInfo = info,
-            EdgeApi = new SrsApi(_serviceProvider.GetRequiredService<HttpClient>(), new Uri($"http://{stream.EdgeIp}:1985"))
+            EdgeApi = new SrsApi(_serviceProvider.GetRequiredService<HttpClient>(),
+                new Uri($"http://{stream.EdgeIp}:1985"))
         };
 
         return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _serviceProvider);

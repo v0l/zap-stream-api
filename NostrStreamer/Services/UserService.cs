@@ -254,8 +254,8 @@ public class UserService
 
     public async Task UpdateStreamInfo(string pubkey, PatchEvent req)
     {
-        await _db.Users
-            .Where(a => a.PubKey == pubkey)
+        await _db.Streams
+            .Where(a => a.Id == req.Id && a.PubKey == pubkey)
             .ExecuteUpdateAsync(o => o.SetProperty(v => v.Title, req.Title)
                 .SetProperty(v => v.Summary, req.Summary)
                 .SetProperty(v => v.Image, req.Image)

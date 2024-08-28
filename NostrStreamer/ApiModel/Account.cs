@@ -4,9 +4,6 @@ namespace NostrStreamer.ApiModel;
 
 public class Account
 {
-    [JsonProperty("event")]
-    public PatchEvent? Event { get; init; }
-
     [JsonProperty("endpoints")]
     public List<AccountEndpoint> Endpoints { get; init; } = new();
     

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NostrStreamer.Database;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NostrStreamer.Migrations
 {
     [DbContext(typeof(StreamerContext))]
-    partial class StreamerContextModelSnapshot : ModelSnapshot
+    [Migration("20240821132917_MigrateStreamInfo")]
+    partial class MigrateStreamInfo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -187,32 +190,8 @@ namespace NostrStreamer.Migrations
                     b.Property<long>("Balance")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("ContentWarning")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Goal")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Image")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsAdmin")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsBlocked")
-                        .HasColumnType("boolean");
-
                     b.Property<string>("StreamKey")
                         .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Summary")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Tags")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Title")
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("TosAccepted")

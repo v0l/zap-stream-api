@@ -9,4 +9,5 @@ public class StreamManagerContext
     public User User => UserStream.User;
     public StreamInfo? StreamInfo { get; init; }
     public SrsApi EdgeApi { get; init; } = null!;
+    public string StreamKey { get; init; } = null!;
 }

@@ -8,8 +8,6 @@ public class UserStreamConfiguration : IEntityTypeConfiguration<UserStream>
     public void Configure(EntityTypeBuilder<UserStream> builder)
     {
         builder.HasKey(a => a.Id);
-        builder.Property(a => a.StreamId)
-            .IsRequired();
 
         builder.Property(a => a.Starts)
             .IsRequired();
@@ -34,6 +32,13 @@ public class UserStreamConfiguration : IEntityTypeConfiguration<UserStream>
             .IsRequired();
 
         builder.Property(a => a.AdmissionCost);
+
+        builder.Property(a => a.Title);
+        builder.Property(a => a.Image);
+        builder.Property(a => a.Summary);
+        builder.Property(a => a.ContentWarning);
+        builder.Property(a => a.Tags);
+        builder.Property(a => a.Goal);
 
         builder.HasOne(a => a.Endpoint)
             .WithMany()

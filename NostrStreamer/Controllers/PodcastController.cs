@@ -29,8 +29,8 @@ public class PodcastController(StreamerContext db, Config config) : Controller
         pod.LiveItem = new()
         {
             Guid = stream.Id,
-            Title = stream.User.Title ?? "",
-            Description = stream.User.Summary,
+            Title = stream.Title ?? "",
+            Description = stream.Summary,
             Status = stream.State.ToString().ToLower(),
             Start = stream.Starts,
             End = stream.Ends ?? new DateTime(),
