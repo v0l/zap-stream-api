@@ -42,7 +42,7 @@ public class PlaylistController : Controller
         {
             var streamManager = await _streamManagerFactory.ForStream(id);
             var userStream = streamManager.GetStream();
-            if (userStream.Endpoint == default)
+            if (userStream.Endpoint == default || string.IsNullOrEmpty(hlsCtx))
             {
                 Response.StatusCode = 404;
                 return;
