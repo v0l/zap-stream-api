@@ -86,6 +86,8 @@ public class UserService
         var user = await GetUser(pubkey);
         if (user == default) throw new Exception("No user found");
 
+        if (!user.IsAdmin) throw new Exception("Withdrawal disabled");
+
         var maxOut = await MaxWithdrawalAmount(pubkey);
         var pr = BOLT11PaymentRequest.Parse(invoice, invoice.StartsWith("lnbc") ? Network.Main : Network.RegTest);
         if (pr.MinimumAmount == 0)
