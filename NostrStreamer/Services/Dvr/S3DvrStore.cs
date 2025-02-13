@@ -62,7 +62,7 @@ public class S3DvrStore(Config config, HttpClient httpClient, ILogger<S3DvrStore
         {
             BucketName = _config.BucketName,
             Key = key,
-            Expires = new DateTime(3000, 1, 1)
+            Expires = DateTime.Now.AddSeconds(604800)
         });
 
         var ub = new UriBuilder(url)
