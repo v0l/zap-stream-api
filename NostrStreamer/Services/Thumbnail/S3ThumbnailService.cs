@@ -36,7 +36,7 @@ public class S3ThumbnailService(Config config, ILogger<S3ThumbnailService> logge
             {
                 BucketName = Config.S3Store.BucketName,
                 Key = s3Path,
-                Expires = DateTime.UtcNow.AddYears(1000)
+                Expires = DateTime.UtcNow.AddSeconds(800_000)
             });
 
             var ub = new UriBuilder(uri)
@@ -52,13 +52,14 @@ public class S3ThumbnailService(Config config, ILogger<S3ThumbnailService> logge
                 .ExecuteUpdateAsync(o => o.SetProperty(v => v.Thumbnail, ub.Uri.ToString()));
 
             var tDbUpdate = sw.Elapsed;
-            
+
             stream.Thumbnail = ub.Uri.ToString();
-            
+
             fs.Close();
             File.Delete(path);
 
-            Logger.LogInformation("{id} generated={tg:#,##0}ms, uploaded={tu:#,##0}ms, db={td:#,##0}ms", stream.Id, tGen.TotalMilliseconds,
+            Logger.LogInformation("{id} generated={tg:#,##0}ms, uploaded={tu:#,##0}ms, db={td:#,##0}ms", stream.Id,
+                tGen.TotalMilliseconds,
                 tUpload.TotalMilliseconds, tDbUpdate.TotalMilliseconds);
         }
         catch (Exception ex)
