@@ -36,7 +36,7 @@ public class S3ThumbnailService(Config config, ILogger<S3ThumbnailService> logge
             {
                 BucketName = Config.S3Store.BucketName,
                 Key = s3Path,
-                Expires = DateTime.UtcNow.AddSeconds(800_000)
+                Expires = DateTime.UtcNow.AddSeconds(600_000)
             });
 
             var ub = new UriBuilder(uri)
