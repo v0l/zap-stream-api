@@ -33,19 +33,19 @@ public class UserService
         var user = new User()
         {
             PubKey = pubkey,
-            Balance = 1000_000,
+            Balance = 0,
             StreamKey = Guid.NewGuid().ToString()
         };
 
         _db.Users.Add(user);
-        _db.Payments.Add(new Payment()
+        /*_db.Payments.Add(new Payment()
         {
             PubKey = pubkey,
             Type = PaymentType.Credit,
             IsPaid = true,
             Amount = (ulong)user.Balance,
             PaymentHash = SHA256.HashData(Encoding.UTF8.GetBytes($"{pubkey}-init-credit")).ToHex()
-        });
+        });*/
 
         await _db.SaveChangesAsync();
         return user;
