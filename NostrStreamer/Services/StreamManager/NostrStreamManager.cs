@@ -166,13 +166,15 @@ public class NostrStreamManager : IStreamManager
             _eventBuilder.BroadcastEvent(chat);
         }
 
-        if (_context.User.Balance <= 0)
+        if (_context.User.Balance <= 0 || _context.User.IsBlocked)
         {
             _logger.LogInformation("Kicking stream due to low balance");
             if (!string.IsNullOrEmpty(_context.UserStream.ForwardClientId))
             {
                 await _context.EdgeApi.KickClient(_context.UserStream.ForwardClientId);
             }
+
+            throw new Exception("User balance too low or user is blocked");
         }
     }
 

@@ -99,7 +99,7 @@ public class SrsController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("Failed to start stream: {message}", ex.Message);
+            _logger.LogWarning("Failed to process stream: {message}", ex.Message);
         }
 
         return new()
