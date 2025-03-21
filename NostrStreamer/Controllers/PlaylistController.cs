@@ -122,6 +122,7 @@ public class PlaylistController : Controller
             var userStream = streamManager.GetStream();
             if (userStream.Endpoint == default)
             {
+                _logger.LogWarning("Failed to get stream for {stream}: No endpoint found", id);
                 Response.StatusCode = 404;
                 return;
             }
@@ -129,6 +130,7 @@ public class PlaylistController : Controller
             var hlsCtx = await GetHlsCtx(userStream);
             if (string.IsNullOrEmpty(hlsCtx))
             {
+                _logger.LogWarning("Failed to get stream for {stream}: No hls_ctx found", id);
                 Response.StatusCode = 404;
                 return;
             }
