@@ -41,7 +41,7 @@ public class NostrStreamManager : IStreamManager
 
     public void TestCanStream()
     {
-        if (_context.User.Balance <= 0)
+        if (_context.User.Balance < 0)
         {
             throw new LowBalanceException("User balance empty");
         }
@@ -56,7 +56,7 @@ public class NostrStreamManager : IStreamManager
     {
         TestCanStream();
         var fwds = new List<string>();
-        if (_context.UserStream.Endpoint != default)
+        if (_context.UserStream.Endpoint != null)
         {
             fwds.Add(
                 $"rtmp://127.0.0.1:1935/{_context.UserStream.Endpoint.App}/{_context.StreamKey}?vhost={_context.UserStream.Endpoint.Forward}");
@@ -88,7 +88,7 @@ public class NostrStreamManager : IStreamManager
 
         _ = Task.Factory.StartNew(async () =>
         {
-            if (_config.DiscordLiveWebhook != default)
+            if (_config.DiscordLiveWebhook != null)
             {
                 try
                 {
@@ -128,7 +128,7 @@ public class NostrStreamManager : IStreamManager
     {
         const long balanceAlertThreshold = 500_000;
 
-        if (_context.UserStream.Endpoint == default) return;
+        if (_context.UserStream.Endpoint == null) return;
         var cost = (long)Math.Ceiling(_context.UserStream.Endpoint.Cost * (duration / 60d));
         if (cost > 0)
         {
@@ -166,7 +166,7 @@ public class NostrStreamManager : IStreamManager
             _eventBuilder.BroadcastEvent(chat);
         }
 
-        if (_context.User.Balance <= 0 || _context.User.IsBlocked)
+        if (_context.User.Balance < 0 || _context.User.IsBlocked)
         {
             _logger.LogInformation("Kicking stream due to low balance");
             if (!string.IsNullOrEmpty(_context.UserStream.ForwardClientId))

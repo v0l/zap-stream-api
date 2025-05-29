@@ -40,7 +40,7 @@ public class StreamManagerFactory
 
         if (ep == default) throw new Exception("No endpoint found");
 
-        if (user.Balance <= 0 && ep.Cost > 0)
+        if (user.Balance < 0)
         {
             throw new LowBalanceException("Cannot start stream with empty balance");
         }
