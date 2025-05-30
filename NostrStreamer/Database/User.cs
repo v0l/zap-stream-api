@@ -34,6 +34,36 @@ public class User
     /// </summary>
     public bool IsBlocked { get; set; }
 
+    /// <summary>
+    /// Stream title
+    /// </summary>
+    public string? Title { get; set; }
+
+    /// <summary>
+    /// Stream summary
+    /// </summary>
+    public string? Summary { get; set; }
+
+    /// <summary>
+    /// Stream cover image
+    /// </summary>
+    public string? Image { get; set; }
+
+    /// <summary>
+    /// Comma seperated tags
+    /// </summary>
+    public string? Tags { get; set; }
+
+    /// <summary>
+    /// Any content warning tag (NIP-36)
+    /// </summary>
+    public string? ContentWarning { get; set; }
+
+    /// <summary>
+    /// Stream goal
+    /// </summary>
+    public string? Goal { get; set; }
+    
     public List<Payment> Payments { get; init; } = new();
     public List<UserStream> Streams { get; init; } = new();
     public List<UserStreamForwards> Forwards { get; init; } = new();

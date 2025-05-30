@@ -261,7 +261,18 @@ public class UserService
             .ExecuteUpdateAsync(o => o.SetProperty(v => v.Title, req.Title)
                 .SetProperty(v => v.Summary, req.Summary)
                 .SetProperty(v => v.Image, req.Image)
-                .SetProperty(v => v.Tags, req.Tags.Length > 0 ? string.Join(",", req.Tags) : null)
+                .SetProperty(v => v.Tags, req.Tags != null && req.Tags.Length > 0 ? string.Join(",", req.Tags) : null)
+                .SetProperty(v => v.ContentWarning, req.ContentWarning)
+                .SetProperty(v => v.Goal, req.Goal));
+    }
+
+    public async Task SetStreamInfoDefaults(string pubkey, PatchEvent req)
+    {
+        await _db.Users.Where(a => a.PubKey == pubkey)
+            .ExecuteUpdateAsync(o => o.SetProperty(v => v.Title, req.Title)
+                .SetProperty(v => v.Summary, req.Summary)
+                .SetProperty(v => v.Image, req.Image)
+                .SetProperty(v => v.Tags, req.Tags != null && req.Tags.Length > 0 ? string.Join(",", req.Tags) : null)
                 .SetProperty(v => v.ContentWarning, req.ContentWarning)
                 .SetProperty(v => v.Goal, req.Goal));
     }

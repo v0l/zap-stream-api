@@ -160,7 +160,7 @@ public static class Extensions
         stream.Summary = ev.Summary;
         stream.Image = ev.Image;
         stream.ContentWarning = ev.ContentWarning;
-        stream.Tags = ev.Tags.Length > 0 ? string.Join(',', ev.Tags) : null;
+        stream.Tags = ev.Tags is { Length: > 0 } ? string.Join(",", ev.Tags) : null;
         stream.Goal = ev.Goal;
     }
 }

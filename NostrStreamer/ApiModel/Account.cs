@@ -15,6 +15,9 @@ public class Account
 
     [JsonProperty("forwards")]
     public List<ForwardDest> Forwards { get; init; } = new();
+    
+    [JsonProperty("details")]
+    public PatchEvent? Details { get; init; }
 }
 
 public class AccountEndpoint

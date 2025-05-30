@@ -82,7 +82,16 @@ public class NostrController : Controller
             {
                 Id = a.Id,
                 Name = a.Name
-            }).ToList()
+            }).ToList(),
+            Details = new()
+            {
+                Title = user.Title,
+                Summary = user.Summary,
+                Image = user.Image,
+                ContentWarning = user.ContentWarning,
+                Tags = user.Tags?.Split(","),
+                Goal = user.Goal,
+            }
         };
 
         return Content(JsonConvert.SerializeObject(account, NostrSerializer.Settings), "application/json");
@@ -93,17 +102,7 @@ public class NostrController : Controller
     {
         var pubkey = GetPubKey();
         if (string.IsNullOrEmpty(pubkey)) return Unauthorized();
-
-        try
-        {
-            await _userService.UpdateStreamInfo(pubkey, req);
-            var streamManager = await _streamManagerFactory.ForCurrentStream(pubkey);
-            await streamManager.UpdateEvent();
-        }
-        catch
-        {
-            //ignore
-        }
+        await _userService.SetStreamInfoDefaults(pubkey, req);
 
         return Accepted();
     }

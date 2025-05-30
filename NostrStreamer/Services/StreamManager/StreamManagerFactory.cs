@@ -69,12 +69,17 @@ public class StreamManagerFactory
             State = UserStreamState.Live,
             EdgeIp = info.EdgeIp,
             ForwardClientId = info.ClientId,
+            Title = user.Title,
+            Summary = user.Summary,
+            Image = user.Image,
+            ContentWarning = user.ContentWarning,
+            Tags = user.Tags,
+            Goal = user.Goal
         };
 
         // add new stream
-        if (existingLive == default)
+        if (existingLive == null)
         {
-            await stream.CopyLastStreamDetails(_db);
             var ev = _eventBuilder.CreateStreamEvent(stream);
             stream.Event = NostrJson.Serialize(ev) ?? "";
             _db.Streams.Add(stream);
