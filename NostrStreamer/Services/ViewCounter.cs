@@ -25,7 +25,7 @@ public class ViewCounter
             if (_sessions.TryGetValue(k, out var x))
             {
                 _sessions[k] = x
-                    .Where(a => a.Value > DateTime.Now.Subtract(TimeSpan.FromMinutes(2)))
+                    .Where(a => a.Value > DateTime.Now.Subtract(TimeSpan.FromMinutes(10)))
                     .ToDictionary(a => a.Key, b => b.Value);
 
                 if (_sessions[k].Count == 0)
