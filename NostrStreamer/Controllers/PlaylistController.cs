@@ -100,6 +100,8 @@ public class PlaylistController : Controller
         try
         {
             var streamManager = await _streamManagerFactory.ForCurrentStream(pubkey);
+            if (streamManager == null)
+                return NotFound();
             var userStream = streamManager.GetStream();
             return Redirect($"stream/{userStream.Id}.m3u8");
         }

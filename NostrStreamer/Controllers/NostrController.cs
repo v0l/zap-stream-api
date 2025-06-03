@@ -102,7 +102,18 @@ public class NostrController : Controller
     {
         var pubkey = GetPubKey();
         if (string.IsNullOrEmpty(pubkey)) return Unauthorized();
-        await _userService.SetStreamInfoDefaults(pubkey, req);
+
+        // patch current event if specified
+        if (req.Id != null)
+        {
+            await _userService.UpdateStreamInfo(pubkey, req);
+            var stream = await _streamManagerFactory.ForStream(req.Id.Value);
+            await stream.UpdateEvent();
+        }
+        else
+        {
+            await _userService.SetStreamInfoDefaults(pubkey, req);
+        }
 
         return Accepted();
     }

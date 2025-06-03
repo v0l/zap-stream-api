@@ -138,7 +138,7 @@ public class StreamManagerFactory
         return new NostrStreamManager(_loggerFactory.CreateLogger<NostrStreamManager>(), ctx, _serviceProvider);
     }
 
-    public async Task<IStreamManager> ForCurrentStream(string pubkey)
+    public async Task<IStreamManager?> ForCurrentStream(string pubkey)
     {
         var stream = await _db.Streams
             .AsNoTracking()
@@ -147,7 +147,8 @@ public class StreamManagerFactory
             .Include(a => a.StreamKey)
             .FirstOrDefaultAsync(a => a.PubKey.Equals(pubkey) && a.State == UserStreamState.Live);
 
-        if (stream == default) throw new Exception("No live stream");
+        if (stream == null)
+            return null;
 
         var ctx = new StreamManagerContext
         {
