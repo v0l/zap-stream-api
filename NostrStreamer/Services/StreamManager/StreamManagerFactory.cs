@@ -106,7 +106,14 @@ public class StreamManagerFactory
                 EdgeIp = stream.EdgeIp,
                 ForwardClientId = stream.ForwardClientId,
                 Endpoint = ep,
-                User = user
+                User = user,
+                // Copy metadata properties from the stream
+                Title = stream.Title,
+                Summary = stream.Summary,
+                Image = stream.Image,
+                ContentWarning = stream.ContentWarning,
+                Tags = stream.Tags,
+                Goal = stream.Goal
             },
             EdgeApi = new SrsApi(_serviceProvider.GetRequiredService<HttpClient>(),
                 new Uri($"http://{stream.EdgeIp}:1985"))
